@@ -1,52 +1,182 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# KeepLynk Mobile App 📱
 
-# Getting Started
+A modern React Native mobile application for managing and organizing your links, resources, and bookmarks with a beautiful Notion-inspired UI.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## ✨ Features
 
-## Step 1: Start Metro
+- 🔐 **User Authentication** - Secure login and registration
+- 📁 **Folder Management** - Organize resources in folders
+- 🔗 **Resource Management** - Save and manage URLs and links
+- 🏷️ **Tag System** - Categorize resources with tags
+- 🔍 **Smart Search** - Quick search across all resources
+- ⭐ **Favorites** - Mark important resources
+- 🎨 **Notion-Inspired UI** - Clean, modern interface
+- 📱 **Bottom Tab Navigation** - Easy navigation with React Navigation
+- 🔄 **Redux State Management** - Efficient state handling with Redux Toolkit
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 🛠️ Tech Stack
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- **React Native** 0.83.1
+- **React Navigation** - Native Stack & Bottom Tabs
+- **Redux Toolkit** - State Management
+- **React Native Vector Icons** - MaterialIcons
+- **React Native Safe Area Context** - Safe area handling
+- **React Native Screens** - Native screen optimization
 
-```sh
-# Using npm
-npm start
+## 📋 Prerequisites
 
-# OR using Yarn
-yarn start
+Before you begin, ensure you have the following installed:
+- Node.js (>= 20)
+- React Native CLI
+- Android Studio (for Android development)
+- Xcode (for iOS development - macOS only)
+- JDK 17 or higher
+
+## 🚀 Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/subhradip-me/keeplynk-mobile-app.git
+cd keeplynk-mobile-app
 ```
 
-## Step 2: Build and run your app
+### 2. Install dependencies
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+```bash
+npm install
+```
+
+### 3. Start Metro Bundler
+
+```bash
+npm start
+```
+
+### 4. Run the app
+
+#### Android
+
+```bash
+npm run android
+```
+
+#### iOS
+
+First, install CocoaPods dependencies:
+
+```bash
+cd ios
+bundle install
+bundle exec pod install
+cd ..
+```
+
+Then run:
+
+```bash
+npm run ios
+```
+
+## 📂 Project Structure
+
+```
+keeplynk/
+├── android/              # Android native code
+├── ios/                  # iOS native code
+├── src/
+│   ├── app/             # Redux store configuration
+│   ├── assets/          # Images, fonts, etc.
+│   ├── components/      # Reusable components
+│   ├── constants/       # Theme, colors, etc.
+│   ├── features/        # Redux slices (auth, folders, resources)
+│   ├── modals/          # Modal components
+│   ├── navigations/     # Navigation setup
+│   ├── screens/         # Screen components
+│   ├── services/        # API services
+│   └── utils/           # Utility functions
+├── App.jsx              # Main app component
+└── index.js            # Entry point
+```
+
+## 🎨 Key Features
+
+### Authentication
+- Login/Register with email and password
+- Secure token-based authentication
+- Persistent login state
+
+### Folder Management
+- Create, edit, and delete folders
+- Organize resources by folders
+- Nested navigation for folder details
+
+### Resource Management
+- Add URLs and links
+- Edit resource details
+- Tag resources
+- Mark as favorites
+- Associate with folders
+
+### Search & Filter
+- Real-time search
+- Filter by tags, folders, and dates
+- Quick access to favorites
+
+## 🔧 Configuration
+
+The app uses various configuration files:
+
+- `app.json` - App metadata
+- `babel.config.js` - Babel configuration
+- `metro.config.js` - Metro bundler configuration
+- `jest.config.js` - Testing configuration
+
+## 🧪 Testing
+
+Run tests with:
+
+```bash
+npm test
+```
+
+## 📱 Build for Production
 
 ### Android
 
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+```bash
+cd android
+./gradlew assembleRelease
 ```
 
 ### iOS
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+```bash
+cd ios
+xcodebuild -workspace KeepLynk.xcworkspace -scheme KeepLynk -configuration Release
 ```
 
-Then, and every time you update your native dependencies, run:
+## 🤝 Contributing
 
-```sh
-bundle exec pod install
-```
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 👨‍💻 Developer
+
+**Subhradip Mondal**
+- GitHub: [@subhradip-me](https://github.com/subhradip-me)
+
+## 🙏 Acknowledgments
+
+- Notion for UI/UX inspiration
+- React Native community for amazing tools and libraries
+
+---
+
+Made with ❤️ using React Native
 
 For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
 
