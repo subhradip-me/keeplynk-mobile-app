@@ -2,7 +2,7 @@ import React, { useState, useRef, memo } from 'react';
 import { View, Text, Pressable, StyleSheet, Image, Modal, TouchableOpacity, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type = 'bookmark', onPress, onEdit, onDelete, onToggleFavorite }) => {
+const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type = 'bookmark', onPress, onLongPress, onEdit, onDelete, onToggleFavorite }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 100, right: 16 });
   const moreButtonRef = useRef(null);
@@ -33,7 +33,8 @@ const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type
   return (
     <>
       <Pressable 
-        onPress={onPress} 
+        onPress={onPress}
+        onLongPress={onLongPress}
         style={({ pressed }) => [
           styles.container,
           pressed && styles.containerPressed
@@ -59,37 +60,58 @@ const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type
             {title || 'Untitled'}
           </Text>
           
-          {description && (
+          {description ? (
             <Text style={styles.description} numberOfLines={2}>
               {description}
+            </Text>
+          ) : (
+            <Text style={styles.description} numberOfLines={2}>
+              No description available
             </Text>
           )}
 
           {/* Tags and Metadata */}
           <View style={styles.metaContainer}>
-            {tags && tags.slice(0, 3).map((tag, index) => {
-              const tagName = typeof tag === 'object' ? tag.name : tag;
-              const tagColor = typeof tag === 'object' ? tag.color : '#2563EB';
-              
-              return (
-                <View 
-                  key={index} 
-                  style={[
-                    styles.tag,
-                    { backgroundColor: `${tagColor}20` }
-                  ]}
-                >
-                  <Text style={[styles.tagText, { color: tagColor }]}>
-                    {tagName}
-                  </Text>
-                </View>
-              );
-            })}
+            {tags && tags.length === 0 ? (
+              <View 
+                style={[
+                  styles.tag,
+                  { backgroundColor: '#6B728020' }
+                ]}
+              >
+                <Text style={[styles.tagText, { color: '#6B7280' }]}>
+                  Untagged
+                </Text>
+              </View>
+            ) : (
+              tags && tags.slice(0, 3).map((tag, index) => {
+                const tagName = typeof tag === 'object' ? tag.name : tag;
+                const tagColor = typeof tag === 'object' ? tag.color : '#2563EB';
+                
+                return (
+                  <View 
+                    key={index} 
+                    style={[
+                      styles.tag,
+                      { backgroundColor: `${tagColor}20` }
+                    ]}
+                  >
+                    <Text style={[styles.tagText, { color: tagColor }]}>
+                      {tagName}
+                    </Text>
+                  </View>
+                );
+              })
+            )}
             
-            {folder && (
-              <View style={styles.folderBadge}>
-                <Icon name="folder" size={10} color="#9333EA" />
-                <Text style={styles.folderBadgeText}>{folder}</Text>
+            {folder && folder !== 'Uncategorised' && (
+              <View style={styles.folderBadge} >
+                <Icon 
+                  name="folder" 
+                  size={10} 
+                  color={(typeof folder === 'object' && folder.color) ? folder.color : '#9333EA'} 
+                />
+                <Text style={[styles.folderBadgeText, { color: typeof folder === 'object' && folder.color ? folder.color : '#9333EA' }]}>{typeof folder === 'object' ? folder.name : folder}</Text>
               </View>
             )}
             
@@ -254,7 +276,7 @@ const styles = StyleSheet.create({
   },
   folderBadgeText: {
     fontSize: 10,
-    color: '#9333EA',
+    //color: '#9333EA',
     fontWeight: '500',
   },
   favoriteBadge: {

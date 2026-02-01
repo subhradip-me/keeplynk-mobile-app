@@ -1,47 +1,38 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import AccountSheet from '../modals/AccountSheet';
-import { Colors, Spacing } from '../constants/theme';
-
-// Simple icon component to replace vector icons
-const Icon = ({ name, size = 24, color = '#000' }) => {
-  const iconMap = {
-    'person': '👤',
-    'settings': '⚙️',
-    'help': '❓',
-    'logout': '🚪',
-    'edit': '✏️',
-    'arrow-forward-ios': '›',
-    'chevron-right': '›',
-    'account-circle': '👤',
-    'notifications': '🔔',
-    'security': '🔒',
-    'privacy': '🔐',
-    'info': 'ℹ️',
-    'feedback': '💬',
-    'share': '📤',
-  };
-  
-  return (
-    <Text style={{ fontSize: size, color }}>
-      {iconMap[name] || '?'}
-    </Text>
-  );
-};
+import { Colors, Spacing, BorderRadius, FontSizes, FontWeights, Shadows } from '../constants/theme';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../features/auth/authHooks';
 
 export default function ProfileScreen({ navigation }) {
-  // Remove missing auth hook and replace with dummy data
-  const user = { name: 'User', email: 'user@example.com' };
-  const logout = () => console.log('Logout');
+  const { user, logout, isAuthenticated } = useAuth();
   const [showAccountSheet, setShowAccountSheet] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
-    // Navigation is handled automatically by RootStack based on isAuthenticated state
+    try {
+      await logout();
+      // Navigate to Auth screen after logout
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Auth' }],
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
+  // Ensure user data is available
+  const displayName = user?.firstName && user?.lastName 
+    ? `${user.firstName} ${user.lastName}` 
+    : user?.email?.split('@')[0] || 'User';
+  
+  const displayEmail = user?.email || 'No email';
+  const avatarInitial = user?.firstName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Profile</Text>
       </View>
@@ -51,17 +42,18 @@ export default function ProfileScreen({ navigation }) {
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.userCard}
+            onPress={() => setShowAccountSheet(true)}
           >
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
-                {user?.firstName?.[0] || 'U'}
+                {avatarInitial}
               </Text>
             </View>
             <View style={styles.userInfo}>
               <Text style={styles.userName}>
-                {user?.firstName} {user?.lastName}
+                {displayName}
               </Text>
-              <Text style={styles.userEmail}>{user?.email}</Text>
+              <Text style={styles.userEmail}>{displayEmail}</Text>
             </View>
             <Icon name="chevron-right" size={24} color={Colors.textTertiary} />
           </TouchableOpacity>
@@ -134,7 +126,7 @@ export default function ProfileScreen({ navigation }) {
         user={user}
         onAccountDetails={() => setShowAccountSheet(false)}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -156,19 +148,19 @@ function SettingItem({ icon, label, value, onPress }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.backgroundSecondary,
+    backgroundColor: Colors.backgroundTertiary,
   },
   header: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: 20,
+    paddingTop: Spacing.sm,
     paddingBottom: Spacing.lg,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.backgroundTertiary,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: Colors.divider,
   },
   title: {
-    fontSize: 30,
-    fontWeight: '700',
+    fontSize: FontSizes.xxxl,
+    fontWeight: FontWeights.bold,
     color: Colors.textPrimary,
     letterSpacing: -0.5,
   },
@@ -176,95 +168,112 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    marginTop: Spacing.lg,
-    backgroundColor: Colors.background,
+    marginTop: Spacing.sm,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.sm,
+    marginHorizontal: Spacing.md,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
+    ...Shadows.small,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textTertiary,
+    fontSize: FontSizes.xs,
+    fontWeight: FontWeights.bold,
+    color: Colors.textSecondary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: Spacing.sm,
+    letterSpacing: 1,
+    marginBottom: Spacing.md,
+    marginTop: Spacing.xs,
   },
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: BorderRadius.full,
     backgroundColor: Colors.backgroundTertiary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: Spacing.md,
+    marginRight: Spacing.lg,
+    borderWidth: 2,
+    borderColor: Colors.divider,
   },
   avatarText: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: FontSizes.xxxl,
+    fontWeight: FontWeights.bold,
     color: Colors.textPrimary,
   },
   userInfo: {
     flex: 1,
   },
   userName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FontSizes.lg,
+    fontWeight: FontWeights.semibold,
     color: Colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
+    letterSpacing: -0.2,
   },
   userEmail: {
-    fontSize: 14,
+    fontSize: FontSizes.sm,
     color: Colors.textSecondary,
+    letterSpacing: -0.1,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm + 6,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
+    borderBottomColor: Colors.backgroundTertiary,
   },
   settingLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: Spacing.sm + 6,
   },
   settingLabel: {
-    fontSize: 15,
+    fontSize: FontSizes.md,
     color: Colors.textPrimary,
+    fontWeight: FontWeights.medium,
   },
   settingRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xs,
+    gap: 6,
   },
   settingValue: {
-    fontSize: 14,
-    color: Colors.textSecondary,
+    fontSize: FontSizes.sm,
+    color: Colors.textTertiary,
+    fontWeight: FontWeights.medium,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.md,
-    gap: Spacing.sm,
+    paddingVertical: Spacing.sm + 6,
+    gap: 10,
+    backgroundColor: '#FEF2F2',
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
   },
   logoutText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: FontSizes.md,
+    fontWeight: FontWeights.semibold,
     color: Colors.error,
+    letterSpacing: -0.1,
   },
   version: {
-    fontSize: 12,
+    fontSize: FontSizes.xs,
     color: Colors.textTertiary,
     textAlign: 'center',
     marginTop: Spacing.xxl,
-    marginBottom: Spacing.xxxl,
+    marginBottom: Spacing.lg,
+    fontWeight: FontWeights.medium,
+    letterSpacing: 0.5,
   },
 });
 

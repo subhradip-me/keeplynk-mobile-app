@@ -8,23 +8,8 @@ import {
   Modal,
   Animated,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
-// Simple icon component
-const Icon = ({ name, size = 24, color = '#000' }) => {
-  const iconMap = {
-    'close': '✕',
-    'check': '✓',
-    'link': '🔗',
-    'add': '➕',
-    'folder': '📁',
-  };
-  
-  return (
-    <Text style={{ fontSize: size, color }}>
-      {iconMap[name] || '?'}
-    </Text>
-  );
-};
 
 export default function AddResourceModal({ visible, onClose, onSave }) {
   const [resourceType, setResourceType] = useState('url');

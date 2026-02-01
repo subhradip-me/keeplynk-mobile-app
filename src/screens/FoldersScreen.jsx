@@ -1,22 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, Modal, TouchableOpacity } from 'react-native';
-import { useSelector } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
+import { useFolders } from '../features/folders';
 import NewFolderModal from '../modals/NewFolderModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export default function FoldersScreen() {
-  const { items: folders = [] } = useSelector((state) => state.folders);
+  const navigation = useNavigation();
+  const { folders, fetchFolders, createFolder } = useFolders();
   const [modalVisible, setModalVisible] = useState(false);
   const [newFolderModalVisible, setNewFolderModalVisible] = useState(false);
 
-  // Remove missing dependencies and replace with dummy functions
-  const fetchFolders = () => console.log('Fetch folders');
-  const createFolder = (folder) => console.log('Create folder:', folder);
-
   useEffect(() => {
     fetchFolders();
-  }, []);
+  }, [fetchFolders]);
 
   const menuItems = [
     { icon: 'add', label: 'New Folder', action: () => setNewFolderModalVisible(true) },
@@ -41,11 +39,11 @@ export default function FoldersScreen() {
       isPrivate: false,
     });
     setNewFolderModalVisible(false);
-  }, []);
+  }, [createFolder]);
 
   const handleFolderPress = useCallback((folder) => {
-    console.log('Navigate to folder:', folder);
-  }, []);
+    navigation.navigate('FolderDetail', { folder });
+  }, [navigation]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -68,16 +66,22 @@ export default function FoldersScreen() {
       onPress={() => handleFolderPress(item)}
     >
       <View style={styles.iconContainer}>
-        <Icon name="folder-open" size={20} color="#787774" />
+        <Icon name="folder-open" size={20} color = {item.color || '#787774'} />
       </View>
       
       <View style={styles.folderContent}>
         <Text style={styles.folderName} numberOfLines={1}>
           {item.name}
         </Text>
-        <Text style={styles.folderDescription} numberOfLines={1}>
-          {item.description}
-        </Text>
+        {item.description ? (
+          <Text style={styles.folderDescription} numberOfLines={1}>
+            {item.description}
+          </Text>
+        ) : (
+          <Text style={styles.folderDescription} numberOfLines={1}>
+            No description available
+          </Text>
+        )}
         <View style={styles.metaRow}>
           <Text style={styles.metaText}>{item.itemCount} items</Text>
           <Text style={styles.metaDot}>•</Text>

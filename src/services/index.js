@@ -14,16 +14,16 @@ export { default as apiClient } from './api';
 export { default as apiService } from './api';
 
 // API modules
-export { authAPI } from './authAPI';
-export { default as resourcesAPI } from './resourcesAPI';
-export { default as foldersAPI } from './foldersAPI';
-export { default as tagsAPI } from './tagsAPI';
-export { default as organizeAPI } from './organizeAPI';
+export { authAPI } from './auth';
+export { default as resourcesAPI } from './resources';
+export { default as foldersAPI } from './folders';
+export { default as tagsAPI } from './tags';
+export { default as organizeAPI } from './organize';
 
 // Legacy exports for backward compatibility with web app
-import { authAPI as authAPIImport } from './authAPI';
+import { authAPI as authAPIImport } from './auth';
 
-export { authAPI as Auth } from './authAPI';
+export { authAPI as Auth } from './auth';
 export const Login = authAPIImport.login;
 export const Register = authAPIImport.register;
 export const Logout = authAPIImport.logout;

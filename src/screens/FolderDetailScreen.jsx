@@ -1,63 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TouchableOpacity } from 'react-native';
-import { useSelector } from 'react-redux';
-
-// Simple icon component
-const Icon = ({ name, size = 24, color = '#000' }) => {
-  const iconMap = {
-    'edit': '✏️',
-    'share': '📤',
-    'delete': '🗑️',
-    'more-vert': '⋮',
-    'arrow-back': '←',
-  };
-  
-  return (
-    <Text style={{ fontSize: size, color }}>
-      {iconMap[name] || '?'}
-    </Text>
-  );
-};
-
-// Simple LinkItem component
-const LinkItem = ({ title, url, description, onPress }) => (
-  <TouchableOpacity style={linkStyles.container} onPress={onPress}>
-    <View>
-      <Text style={linkStyles.title}>{title || 'Untitled'}</Text>
-      <Text style={linkStyles.url}>{url}</Text>
-      {description && <Text style={linkStyles.description}>{description}</Text>}
-    </View>
-  </TouchableOpacity>
-);
-
-const linkStyles = StyleSheet.create({
-  container: {
-    padding: 16,
-    backgroundColor: '#fff',
-    marginBottom: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  url: {
-    fontSize: 14,
-    color: '#007AFF',
-    marginBottom: 4,
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-  },
-});
+import { useNavigation } from '@react-navigation/native';
+import { useResources } from '../features/resources/resourceHooks';
+import LinkItem from '../components/LinkItem';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function FolderDetailScreen({ route = { params: { folder: { _id: '1', name: 'Sample Folder' } } } }) {
+  const navigation = useNavigation();
   const { folder } = route.params;
-  const { items: resources = [] } = useSelector((state) => state.resources);
+  const { resources = [] } = useResources();
   
   // Get resources by folder
   const folderResources = resources.filter(r => r.folderId === folder._id);
@@ -83,7 +35,7 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -91,11 +43,11 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
         </Pressable>
         <View style={styles.headerContent}>
           <View style={styles.folderIcon}>
-            <Icon name="folder" size={24} color={folder.color || '#3B82F6'} />
+            <Icon name={folder.icon || "folder"} size={24} color={folder.color || '#3B82F6'} />
           </View>
           <View style={styles.headerText}>
             <Text style={styles.folderName}>{folder.name}</Text>
-            <Text style={styles.itemCount}>{resources.length} items</Text>
+            <Text style={styles.itemCount}>{folderResources.length} items</Text>
           </View>
         </View>
         <Pressable onPress={() => setModalVisible(true)} style={styles.moreButton}>
@@ -112,7 +64,7 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
       )}
 
       {/* Resources List */}
-      {resources.length === 0 ? (
+      {folderResources.length === 0 ? (
         <View style={styles.emptyState}>
           <Icon name="folder-open" size={64} color="#9B9A97" />
           <Text style={styles.emptyTitle}>No items yet</Text>
@@ -121,7 +73,7 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
       ) : (
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.linkList}>
-            {resources.map((resource) => (
+            {folderResources.map((resource) => (
               <LinkItem
                 key={resource._id}
                 title={resource.title}
@@ -184,7 +136,7 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
           </View>
         </TouchableOpacity>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 

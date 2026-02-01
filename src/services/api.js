@@ -1,244 +1,164 @@
-import { getApiUrl, API_ENDPOINTS } from '../config/api';
-import { formatResourceData, formatFolderData } from '../utils/apiHelpers';
+
+import { API_ENDPOINTS } from '../config/api';
+import { formatResourceData, formatFolderData } from './utils/apiHelpers';
+import { apiClient, ApiTokenManager } from './api/axios';
 
 class ApiService {
-  constructor() {
-    this.token = null;
-  }
-
-  setToken(token) {
-    this.token = token;
-  }
-
-  getToken() {
-    return this.token;
-  }
-
-  clearToken() {
-    this.token = null;
-  }
-
-  async request(endpoint, options = {}) {
-    const url = getApiUrl(endpoint);
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-
-    if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
-    }
-
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Handle specific error cases
-        if (response.status === 400 && data.message?.includes('No active persona')) {
-          throw new Error('PERSONA_REQUIRED: ' + (data.message || 'Please add a persona to your account'));
-        }
-        throw new Error(data.message || 'Request failed');
-      }
-
-      return data;
-    } catch (error) {
-      console.error('API Error:', error);
-      throw error;
-    }
-  }
-
   // Authentication
   async register(userData) {
-    const response = await this.request(API_ENDPOINTS.AUTH.REGISTER, {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
-    
+    const response = await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, userData);
     if (response.data?.token) {
-      this.setToken(response.data.token);
+      ApiTokenManager.setToken(response.data.token);
     }
-    
-    return response;
+    return response.data;
   }
 
   async login(credentials) {
-    const response = await this.request(API_ENDPOINTS.AUTH.LOGIN, {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
-    
+    const response = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
     if (response.data?.token) {
-      this.setToken(response.data.token);
+      ApiTokenManager.setToken(response.data.token);
     }
-    
-    return response;
+    return response.data;
   }
 
   async getProfile() {
-    return this.request(API_ENDPOINTS.AUTH.ME);
+    const response = await apiClient.get(API_ENDPOINTS.AUTH.ME);
+    return response.data;
   }
 
   async addPersona(persona) {
-    const response = await this.request(API_ENDPOINTS.AUTH.ADD_PERSONA, {
-      method: 'POST',
-      body: JSON.stringify({ persona }),
-    });
-    
+    const response = await apiClient.post(API_ENDPOINTS.AUTH.ADD_PERSONA, { persona });
     if (response.data?.token) {
-      this.setToken(response.data.token);
+      ApiTokenManager.setToken(response.data.token);
     }
-    
-    return response;
+    return response.data;
   }
 
   async switchPersona(persona) {
-    const response = await this.request(API_ENDPOINTS.AUTH.SWITCH_PERSONA, {
-      method: 'PUT',
-      body: JSON.stringify({ persona }),
-    });
-    
+    const response = await apiClient.put(API_ENDPOINTS.AUTH.SWITCH_PERSONA, { persona });
     if (response.data?.token) {
-      this.setToken(response.data.token);
+      ApiTokenManager.setToken(response.data.token);
     }
-    
-    return response;
+    return response.data;
   }
 
   async removePersona(persona) {
-    return this.request(`${API_ENDPOINTS.AUTH.REMOVE_PERSONA}/${persona}`, {
-      method: 'DELETE',
-    });
+    const endpoint = `${API_ENDPOINTS.AUTH.REMOVE_PERSONA}/${persona}`;
+    const response = await apiClient.delete(endpoint);
+    return response.data;
   }
 
   // Resources
   async getResources(params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    const endpoint = queryString 
-      ? `${API_ENDPOINTS.RESOURCES.BASE}?${queryString}`
-      : API_ENDPOINTS.RESOURCES.BASE;
-    
-    return this.request(endpoint);
+    const response = await apiClient.get(API_ENDPOINTS.RESOURCES.BASE, { params });
+    return response.data;
   }
 
   async getResourceById(id) {
-    return this.request(API_ENDPOINTS.RESOURCES.BY_ID(id));
+    const response = await apiClient.get(API_ENDPOINTS.RESOURCES.BY_ID(id));
+    return response.data;
   }
 
   async createResource(resourceData) {
     const formattedData = formatResourceData(resourceData);
-    return this.request(API_ENDPOINTS.RESOURCES.BASE, {
-      method: 'POST',
-      body: JSON.stringify(formattedData),
-    });
+    const response = await apiClient.post(API_ENDPOINTS.RESOURCES.BASE, formattedData);
+    return response.data;
   }
 
   async updateResource(id, resourceData) {
-    return this.request(API_ENDPOINTS.RESOURCES.BY_ID(id), {
-      method: 'PUT',
-      body: JSON.stringify(resourceData),
-    });
+    const response = await apiClient.put(API_ENDPOINTS.RESOURCES.BY_ID(id), resourceData);
+    return response.data;
   }
 
   async deleteResource(id) {
-    return this.request(API_ENDPOINTS.RESOURCES.BY_ID(id), {
-      method: 'DELETE',
-    });
+    const response = await apiClient.delete(API_ENDPOINTS.RESOURCES.BY_ID(id));
+    return response.data;
   }
 
   async searchResources(query, params = {}) {
-    const queryString = new URLSearchParams({ q: query, ...params }).toString();
-    return this.request(`${API_ENDPOINTS.RESOURCES.SEARCH}?${queryString}`);
+    const response = await apiClient.get(API_ENDPOINTS.RESOURCES.SEARCH, {
+      params: { q: query, ...params },
+    });
+    return response.data;
   }
 
   async getUnorganizedResources() {
-    return this.request(API_ENDPOINTS.RESOURCES.UNORGANIZED);
+    const response = await apiClient.get(API_ENDPOINTS.RESOURCES.UNORGANIZED);
+    return response.data;
   }
 
   // Folders
   async getFolders() {
-    return this.request(API_ENDPOINTS.FOLDERS.BASE);
+    const response = await apiClient.get(API_ENDPOINTS.FOLDERS.BASE);
+    return response.data;
   }
 
   async getFolderById(id) {
-    return this.request(API_ENDPOINTS.FOLDERS.BY_ID(id));
+    const response = await apiClient.get(API_ENDPOINTS.FOLDERS.BY_ID(id));
+    return response.data;
   }
 
   async getFolderResources(id) {
-    return this.request(API_ENDPOINTS.FOLDERS.RESOURCES(id));
+    const response = await apiClient.get(API_ENDPOINTS.FOLDERS.RESOURCES(id));
+    return response.data;
   }
 
   async createFolder(folderData) {
     const formattedData = formatFolderData(folderData);
-    return this.request(API_ENDPOINTS.FOLDERS.BASE, {
-      method: 'POST',
-      body: JSON.stringify(formattedData),
-    });
+    const response = await apiClient.post(API_ENDPOINTS.FOLDERS.BASE, formattedData);
+    return response.data;
   }
 
   async updateFolder(id, folderData) {
-    return this.request(API_ENDPOINTS.FOLDERS.BY_ID(id), {
-      method: 'PUT',
-      body: JSON.stringify(folderData),
-    });
+    const response = await apiClient.put(API_ENDPOINTS.FOLDERS.BY_ID(id), folderData);
+    return response.data;
   }
 
   async deleteFolder(id) {
-    return this.request(API_ENDPOINTS.FOLDERS.BY_ID(id), {
-      method: 'DELETE',
-    });
+    const response = await apiClient.delete(API_ENDPOINTS.FOLDERS.BY_ID(id));
+    return response.data;
   }
 
   // Tags
   async getTags() {
-    return this.request(API_ENDPOINTS.TAGS.BASE);
+    const response = await apiClient.get(API_ENDPOINTS.TAGS.BASE);
+    return response.data;
   }
 
   async getTagById(id) {
-    return this.request(API_ENDPOINTS.TAGS.BY_ID(id));
+    const response = await apiClient.get(API_ENDPOINTS.TAGS.BY_ID(id));
+    return response.data;
   }
 
   async getPopularTags(limit = 10) {
-    return this.request(`${API_ENDPOINTS.TAGS.POPULAR}?limit=${limit}`);
+    const response = await apiClient.get(API_ENDPOINTS.TAGS.POPULAR, { params: { limit } });
+    return response.data;
   }
 
   async createTag(tagData) {
-    return this.request(API_ENDPOINTS.TAGS.BASE, {
-      method: 'POST',
-      body: JSON.stringify(tagData),
-    });
+    const response = await apiClient.post(API_ENDPOINTS.TAGS.BASE, tagData);
+    return response.data;
   }
 
   async updateTag(id, tagData) {
-    return this.request(API_ENDPOINTS.TAGS.BY_ID(id), {
-      method: 'PUT',
-      body: JSON.stringify(tagData),
-    });
+    const response = await apiClient.put(API_ENDPOINTS.TAGS.BY_ID(id), tagData);
+    return response.data;
   }
 
   async deleteTag(id) {
-    return this.request(API_ENDPOINTS.TAGS.BY_ID(id), {
-      method: 'DELETE',
-    });
+    const response = await apiClient.delete(API_ENDPOINTS.TAGS.BY_ID(id));
+    return response.data;
   }
 
   // Agent
   async agentDecide(context, action, data) {
-    return this.request(API_ENDPOINTS.AGENT.DECIDE, {
-      method: 'POST',
-      body: JSON.stringify({ context, action, data }),
-    });
+    const response = await apiClient.post(API_ENDPOINTS.AGENT.DECIDE, { context, action, data });
+    return response.data;
   }
 
   async organizeResource(resourceId, targetFolderId = null) {
-    return this.request(API_ENDPOINTS.AGENT.ORGANIZE, {
-      method: 'POST',
-      body: JSON.stringify({ resourceId, targetFolderId }),
-    });
+    const response = await apiClient.post(API_ENDPOINTS.AGENT.ORGANIZE, { resourceId, targetFolderId });
+    return response.data;
   }
 }
 

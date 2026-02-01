@@ -1,18 +1,7 @@
 import React, { memo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
-// Simple icon component to replace vector icons
-const Icon = ({ name, size = 24, color = '#000' }) => {
-  const iconMap = {
-    'folder': '📁',
-    'folder-outline': '📂',
-  };
-  return (
-    <Text style={{ fontSize: size, color: color }}>
-      {iconMap[name] || '📁'}
-    </Text>
-  );
-};
 
 const FolderCard = ({ name, itemCount, onPress }) => {
   return (

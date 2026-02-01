@@ -1,16 +1,14 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import apiService from '../../services/api';
+import { foldersAPI } from '../../services';
 
 // Fetch all folders
 export const fetchFolders = createAsyncThunk(
     'folders/fetchFolders',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await apiService.getFolders();
-            if (response.success) {
-                return response.data;
-            }
-            return rejectWithValue(response.message);
+            const data = await foldersAPI.getAll();
+            // Handle both {success, data} and direct data responses
+            return data.data || data;
         } catch (error) {
             return rejectWithValue(error.message);
         }
@@ -22,11 +20,8 @@ export const fetchFolderById = createAsyncThunk(
     'folders/fetchFolderById',
     async (id, { rejectWithValue }) => {
         try {
-            const response = await apiService.getFolderById(id);
-            if (response.success) {
-                return response.data;
-            }
-            return rejectWithValue(response.message);
+            const data = await foldersAPI.getById(id);
+            return data.data || data;
         } catch (error) {
             return rejectWithValue(error.message);
         }
@@ -38,11 +33,8 @@ export const createFolder = createAsyncThunk(
     'folders/createFolder',
     async (folderData, { rejectWithValue }) => {
         try {
-            const response = await apiService.createFolder(folderData);
-            if (response.success) {
-                return response.data;
-            }
-            return rejectWithValue(response.message);
+            const data = await foldersAPI.create(folderData);
+            return data.data || data;
         } catch (error) {
             return rejectWithValue(error.message);
         }
@@ -54,11 +46,8 @@ export const updateFolder = createAsyncThunk(
     'folders/updateFolder',
     async ({ id, folderData }, { rejectWithValue }) => {
         try {
-            const response = await apiService.updateFolder(id, folderData);
-            if (response.success) {
-                return response.data;
-            }
-            return rejectWithValue(response.message);
+            const data = await foldersAPI.update(id, folderData);
+            return data.data || data;
         } catch (error) {
             return rejectWithValue(error.message);
         }
@@ -70,11 +59,8 @@ export const deleteFolder = createAsyncThunk(
     'folders/deleteFolder',
     async (id, { rejectWithValue }) => {
         try {
-            const response = await apiService.deleteFolder(id);
-            if (response.success) {
-                return id;
-            }
-            return rejectWithValue(response.message);
+            await foldersAPI.delete(id);
+            return id;
         } catch (error) {
             return rejectWithValue(error.message);
         }

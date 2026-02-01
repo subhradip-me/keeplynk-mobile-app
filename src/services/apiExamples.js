@@ -2,7 +2,7 @@
 // NOTE: These are code examples. In React components, use the hooks directly.
 // In non-React code (like services), use the store directly or pass dispatch as a parameter.
 
-import apiService from '../services/api';
+import apiService from '../services/api'; // No axiosConfig import here, nothing to change
 import { store } from '../app/store';
 import { register, login, logout, addPersona, switchPersona } from '../features/auth/authThunk';
 

@@ -4,22 +4,27 @@ A modern React Native mobile application for managing and organizing your links,
 
 ## ✨ Features
 
-- 🔐 **User Authentication** - Secure login and registration
-- 📁 **Folder Management** - Organize resources in folders
-- 🔗 **Resource Management** - Save and manage URLs and links
-- 🏷️ **Tag System** - Categorize resources with tags
-- 🔍 **Smart Search** - Quick search across all resources
-- ⭐ **Favorites** - Mark important resources
-- 🎨 **Notion-Inspired UI** - Clean, modern interface
-- 📱 **Bottom Tab Navigation** - Easy navigation with React Navigation
+- 🔐 **User Authentication** - Secure JWT token-based login and registration with Axios interceptors
+- 📁 **Folder Management** - Create, edit, organize resources in color-coded folders
+- 🔗 **Resource Management** - Save and manage URLs, links, and bookmarks
+- 🏷️ **Tag System** - Categorize resources with tags (displays "Untagged" for untagged items)
+- 🔍 **Smart Search** - Real-time search across all resources
+- ⭐ **Favorites** - Mark and filter important resources
+- 🎯 **Smart Selection Mode** - Long-press to select and organize uncategorised items
+- 🤖 **AI Auto-Organize** - Intelligent resource organization with gradient action button
+- 🎨 **Notion-Inspired UI** - Clean, modern interface with consistent design system
+- 📱 **Bottom Tab Navigation** - Intuitive navigation with React Navigation
 - 🔄 **Redux State Management** - Efficient state handling with Redux Toolkit
+- 🎭 **Polished Profile Screen** - Beautiful card-based profile UI with account management
 
 ## 🛠️ Tech Stack
 
 - **React Native** 0.83.1
-- **React Navigation** - Native Stack & Bottom Tabs
-- **Redux Toolkit** - State Management
+- **React Navigation** - Native Stack & Bottom Tabs (@react-navigation/native, @react-navigation/native-stack, @react-navigation/bottom-tabs)
+- **Redux Toolkit** - State Management (@reduxjs/toolkit, react-redux)
+- **Axios** - HTTP client with interceptors for authentication
 - **React Native Vector Icons** - MaterialIcons
+- **React Native Linear Gradient** - Gradient UI elements
 - **React Native Safe Area Context** - Safe area handling
 - **React Native Screens** - Native screen optimization
 
@@ -38,7 +43,7 @@ Before you begin, ensure you have the following installed:
 
 ```bash
 git clone https://github.com/subhradip-me/keeplynk-mobile-app.git
-cd keeplynk-mobile-app
+cd KeepLynk
 ```
 
 ### 2. Install dependencies
@@ -81,56 +86,95 @@ npm run ios
 ## 📂 Project Structure
 
 ```
-keeplynk/
+KeepLynk/
 ├── android/              # Android native code
 ├── ios/                  # iOS native code
 ├── src/
 │   ├── app/             # Redux store configuration
 │   ├── assets/          # Images, fonts, etc.
-│   ├── components/      # Reusable components
-│   ├── constants/       # Theme, colors, etc.
-│   ├── features/        # Redux slices (auth, folders, resources)
-│   ├── modals/          # Modal components
-│   ├── navigations/     # Navigation setup
+│   ├── components/      # Reusable components (LinkItem, FolderCard, etc.)
+│   ├── config/          # API configuration
+│   ├── constants/       # Theme constants (Colors, Spacing, Shadows, etc.)
+│   ├── data/            # Dummy data for development
+│   ├── features/        # Redux slices & hooks
+│   │   ├── auth/        # Authentication (slice, thunks, hooks, selectors)
+│   │   ├── folders/     # Folder management
+│   │   └── resources/   # Resource management
+│   ├── modals/          # Modal components (AccountSheet, AddResourceModal, etc.)
+│   ├── navigations/     # Navigation setup (RootStack, FoldersStack, BottomTabs)
 │   ├── screens/         # Screen components
-│   ├── services/        # API services
-│   └── utils/           # Utility functions
+│   │   ├── AuthScreen.jsx
+│   │   ├── HomeScreen.jsx
+│   │   ├── FoldersScreen.jsx
+│   │   ├── FolderDetailScreen.jsx
+│   │   ├── ProfileScreen.jsx
+│   │   └── ...
+│   ├── services/        # API services (modular architecture)
+│   │   ├── api/         # Axios instance with interceptors
+│   │   ├── auth/        # Authentication API
+│   │   ├── folders/     # Folders API
+│   │   ├── resources/   # Resources API
+│   │   ├── tags/        # Tags API
+│   │   └── organize/    # AI organization API
+│   └── utils/           # Utility functions and helpers
 ├── App.jsx              # Main app component
-└── index.js            # Entry point
+├── index.js             # Entry point
+└── package.json         # Dependencies
 ```
 
 ## 🎨 Key Features
 
-### Authentication
+### Authentication System
 - Login/Register with email and password
-- Secure token-based authentication
-- Persistent login state
+- JWT token-based authentication with Axios interceptors
+- ApiTokenManager for centralized token storage
+- Persistent login state with automatic token restoration
+- Secure logout with navigation reset
 
 ### Folder Management
-- Create, edit, and delete folders
-- Organize resources by folders
-- Nested navigation for folder details
+- Create, edit, and delete color-coded folders
+- Organize resources by folders with visual badges
+- Nested navigation to folder details
+- Folder lookup mapping for efficient data access
 
 ### Resource Management
-- Add URLs and links
+- Add URLs and links with metadata
 - Edit resource details
-- Tag resources
-- Mark as favorites
-- Associate with folders
+- Tag resources (displays "Untagged" for items without tags)
+- Mark as favorites with star icon
+- Associate with folders with color-coded badges
+- Long-press selection mode for batch operations
+- Menu actions: Edit, Move to Folder, Favorite, Delete
 
-### Search & Filter
-- Real-time search
-- Filter by tags, folders, and dates
-- Quick access to favorites
+### Smart Features
+- Real-time search across all resources
+- Filter by tags, folders, and favorites
+- AI-powered Auto Organize with gradient button
+- Selection mode for organizing uncategorised items
+- Folder color badges for visual organization
+
+### UI/UX
+- Notion-inspired design system
+- Consistent theming with Colors, Spacing, Shadows constants
+- Polished profile screen with card-based layout
+- Smooth animations and transitions
+- Bottom tab navigation with icons
 
 ## 🔧 Configuration
 
 The app uses various configuration files:
 
-- `app.json` - App metadata
+- `app.json` - App metadata and display name
 - `babel.config.js` - Babel configuration
 - `metro.config.js` - Metro bundler configuration
 - `jest.config.js` - Testing configuration
+- `src/config/api.js` - API base URL and endpoints
+
+### API Configuration
+
+The app connects to: `https://api-gateway-keeplynk-1.onrender.com/api`
+
+Update `src/config/api.js` to change the API endpoint.
 
 ## 🧪 Testing
 
@@ -156,6 +200,40 @@ cd ios
 xcodebuild -workspace KeepLynk.xcworkspace -scheme KeepLynk -configuration Release
 ```
 
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Android Build Errors**
+```bash
+cd android
+./gradlew clean
+cd ..
+npm run android
+```
+
+**iOS Build Errors**
+```bash
+cd ios
+pod deintegrate
+pod install
+cd ..
+npm run ios
+```
+
+**Metro Bundler Issues**
+```bash
+npm start -- --reset-cache
+```
+
+**Missing Dependencies**
+```bash
+npm install
+cd ios && pod install && cd ..
+```
+
+For more help, see the [React Native Troubleshooting](https://reactnative.dev/docs/troubleshooting) guide.
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -169,59 +247,20 @@ This project is licensed under the MIT License.
 **Subhradip Mondal**
 - GitHub: [@subhradip-me](https://github.com/subhradip-me)
 
+## 📚 Learn More
+
+- [React Native Documentation](https://reactnative.dev)
+- [React Navigation Documentation](https://reactnavigation.org)
+- [Redux Toolkit Documentation](https://redux-toolkit.js.org)
+- [Axios Documentation](https://axios-http.com)
+
 ## 🙏 Acknowledgments
 
 - Notion for UI/UX inspiration
 - React Native community for amazing tools and libraries
+- Redux Toolkit for simplified state management
+- Axios for reliable HTTP client
 
 ---
 
 Made with ❤️ using React Native
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.

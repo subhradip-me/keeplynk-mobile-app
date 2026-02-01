@@ -1,23 +1,12 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, Modal, TouchableOpacity, Animated, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 // Simple icon component
-const Icon = ({ name, size = 24, color = '#000' }) => {
-  const iconMap = {
-    'person': '👤',
-    'close': '✕',
-    'logout': '🚪',
-    'settings': '⚙️',
-  };
-  
-  return (
-    <Text style={{ fontSize: size, color }}>
-      {iconMap[name] || '?'}
-    </Text>
-  );
-};
 
 export default function AccountSheet({ visible, onClose, onLogout, user, onAccountDetails }) {
+  const navigation = useNavigation();
   const slideAnim = React.useRef(new Animated.Value(200)).current;
 
   React.useEffect(() => {
@@ -78,9 +67,7 @@ export default function AccountSheet({ visible, onClose, onLogout, user, onAccou
             <Item icon="person-outline" label="Account details" onPress={() => {
               onClose();
               setTimeout(() => {
-                if (onAccountDetails) {
-                  onAccountDetails();
-                }
+                navigation.navigate('Profile');
               }, 300);
             }} />
             <Item icon="add" label="Add another account" onPress={onClose} />
