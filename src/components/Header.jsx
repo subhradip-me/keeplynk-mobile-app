@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Modal, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../features/auth/authHooks';
 
 export default function Header({ onAccountPress, onMorePress }) {
   const { user } = useAuth();
+  const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   
   const handleMorePress = () => {
@@ -17,8 +19,8 @@ export default function Header({ onAccountPress, onMorePress }) {
   };
 
   const menuItems = [
-    { icon: 'settings', label: 'Settings', action: () => console.log('Settings') },
-    { icon: 'delete-outline', label: 'Trash', action: () => console.log('Trash') },
+    { icon: 'settings', label: 'Settings', action: () => navigation.navigate('Profile') },
+    { icon: 'delete-outline', label: 'Trash', action: () => navigation.navigate('Trash') },
     { icon: 'help-outline', label: 'Help & Support', action: () => console.log('Help') },
     { icon: 'info-outline', label: 'About', action: () => console.log('About') },
   ];

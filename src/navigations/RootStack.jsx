@@ -4,6 +4,7 @@ import { ActivityIndicator, View, StyleSheet, Text } from 'react-native';
 import BottomTabs from './BottomTabs';
 import AuthScreen from '../screens/AuthScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import TrashScreen from '../screens/TrashScreen';
 import { useAuth, useAuthInit } from '../features/auth/authHooks';
 import { Colors } from '../constants/theme';
 
@@ -32,6 +33,7 @@ export default function RootStack() {
       <Stack.Screen name="Auth" component={AuthScreen} />
       <Stack.Screen name="Main" component={BottomTabs} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="Trash" component={TrashScreen} />
     </Stack.Navigator>
   );
 }

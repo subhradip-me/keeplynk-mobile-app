@@ -8,28 +8,58 @@ import {
   Modal,
   Animated,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useResources } from '../features/resources/resourceHooks';
+import { useFolders } from '../features/folders/folderHooks';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 
 export default function EditResourceModal({ visible, onClose, resource, onSave }) {
   const { updateResource } = useResources();
+  const { folders } = useFolders();
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
-  const [selectedFolder, setSelectedFolder] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedFolderId, setSelectedFolderId] = useState(null);
   const [tags, setTags] = useState('');
+  const [folderExpanded, setFolderExpanded] = useState(false);
+  const [originalData, setOriginalData] = useState({});
   const slideAnim = React.useRef(new Animated.Value(300)).current;
+
+  const getFavicon = (url) => {
+    if (!url) return null;
+    try {
+      const domain = new URL(url).hostname;
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+    } catch {
+      return null;
+    }
+  };
 
   // Update form when resource changes
   useEffect(() => {
     if (resource) {
-      setUrl(resource.url || '');
-      setTitle(resource.title || '');
-      setSelectedFolder(resource.folder || '');
-      // Handle tags whether they're strings or objects with name property
+      const urlValue = resource.url || '';
+      const titleValue = resource.title || '';
+      const descriptionValue = resource.description || '';
+      const folderIdValue = resource.folderId || null;
       const tagString = resource.tags?.map(tag => typeof tag === 'object' ? tag.name : tag).join(', ') || '';
+      
+      setUrl(urlValue);
+      setTitle(titleValue);
+      setDescription(descriptionValue);
+      setSelectedFolderId(folderIdValue);
       setTags(tagString);
+      
+      // Store original values for comparison
+      setOriginalData({
+        url: urlValue,
+        title: titleValue,
+        description: descriptionValue,
+        folderId: folderIdValue,
+        tags: tagString,
+      });
     }
   }, [resource]);
 
@@ -46,6 +76,16 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
     }
   }, [visible, slideAnim]);
 
+  const hasChanges = () => {
+    return (
+      url !== originalData.url ||
+      title !== originalData.title ||
+      description !== originalData.description ||
+      selectedFolderId !== originalData.folderId ||
+      tags !== originalData.tags
+    );
+  };
+
   const handleSave = async () => {
     if (!url.trim()) {
       console.log('URL is required');
@@ -55,7 +95,8 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
     const resourceData = {
       url: url.trim(),
       title: title.trim() || 'Untitled',
-      folder: selectedFolder || 'Uncategorised',
+      description: description.trim(),
+      folderId: selectedFolderId,
       tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
     };
 
@@ -93,24 +134,20 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
           </View>
 
           {/* Form */}
-          <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-            {/* URL Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>URL *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="https://example.com"
-                placeholderTextColor="#999"
-                value={url}
-                onChangeText={setUrl}
-                keyboardType="url"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            {/* URL Section */}
+            <View style={styles.section}>
+              <Text style={styles.label}>URL</Text>
+              <View style={styles.urlContainer}>
+                <Icon name="link" size={18} color="#666" />
+                <Text style={styles.urlText} numberOfLines={2}>
+                  {url}
+                </Text>
+              </View>
             </View>
 
-            {/* Title Input */}
-            <View style={styles.inputGroup}>
+            {/* Title Section */}
+            <View style={styles.section}>
               <Text style={styles.label}>Title</Text>
               <TextInput
                 style={styles.input}
@@ -121,21 +158,97 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
               />
             </View>
 
-            {/* Folder Selector */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Folder</Text>
-              <Pressable style={styles.folderSelector}>
-                <Icon name="folder-open" size={20} color="#666" />
-                <Text style={styles.folderText}>
-                  {selectedFolder || 'Select folder'}
-                </Text>
-                <Icon name="chevron-right" size={20} color="#999" />
-              </Pressable>
+            {/* Description Section */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Description</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Add a description (optional)"
+                placeholderTextColor="#999"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
             </View>
 
-            {/* Tags Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Tags (Optional)</Text>
+            {/* Folder Section */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Folder</Text>
+              <Pressable 
+                style={styles.folderSelector}
+                onPress={() => setFolderExpanded(!folderExpanded)}
+              >
+                <Icon name="folder-open" size={20} color="#666" />
+                <Text style={styles.folderText}>
+                  {folders.find(f => (f._id || f.id) === selectedFolderId)?.name || 'Uncategorised'}
+                </Text>
+                <Icon 
+                  name={folderExpanded ? "expand-less" : "expand-more"} 
+                  size={20} 
+                  color="#999" 
+                />
+              </Pressable>
+              
+              {/* Expanded Folder List */}
+              {folderExpanded && (
+                <View style={styles.folderList}>
+                  {/* Uncategorised Option */}
+                  <Pressable
+                    style={[styles.folderItem, selectedFolderId === null && styles.folderItemSelected]}
+                    onPress={() => {
+                      setSelectedFolderId(null);
+                      setFolderExpanded(false);
+                    }}
+                  >
+                    <View style={[styles.folderIconContainer, { backgroundColor: '#E5E7EB' }]}>
+                      <Icon name="folder-open" size={16} color="#6B7280" />
+                    </View>
+                    <Text style={styles.folderItemText}>Uncategorised</Text>
+                    {selectedFolderId === null && (
+                      <Icon name="check" size={18} color="#2563EB" />
+                    )}
+                  </Pressable>
+                  
+                  {/* Folder Items */}
+                  {folders.map((folder) => {
+                    const isSelected = selectedFolderId === (folder._id || folder.id);
+                    return (
+                      <Pressable
+                        key={folder._id || folder.id}
+                        style={[styles.folderItem, isSelected && styles.folderItemSelected]}
+                        onPress={() => {
+                          setSelectedFolderId(folder._id || folder.id);
+                          setFolderExpanded(false);
+                        }}
+                      >
+                        <View 
+                          style={[
+                            styles.folderIconContainer,
+                            { backgroundColor: folder.color ? `${folder.color}15` : '#F3F4F6' }
+                          ]}
+                        >
+                          <Icon 
+                            name={folder.icon || 'folder'} 
+                            size={16} 
+                            color={folder.color || '#6B7280'} 
+                          />
+                        </View>
+                        <Text style={styles.folderItemText}>{folder.name}</Text>
+                        {isSelected && (
+                          <Icon name="check" size={18} color="#2563EB" />
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+
+            {/* Tags Section */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Tags</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Add tags separated by commas"
@@ -151,15 +264,14 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
           <Pressable
             style={({ pressed }) => [
               styles.saveButton,
-              (!url.trim()) && styles.saveButtonDisabled,
+              (!url.trim() || !hasChanges()) && styles.saveButtonDisabled,
               pressed && styles.saveButtonPressed,
             ]}
             onPress={handleSave}
-            disabled={!url.trim()}
+            disabled={!url.trim() || !hasChanges()}
           >
             <Text style={styles.saveButtonText}>Save Changes</Text>
           </Pressable>
-
         </Animated.View>
       </View>
     </Modal>
@@ -180,7 +292,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 20,
-    maxHeight: '90%',
+    height: '92%',
   },
   handleBar: {
     width: 36,
@@ -206,19 +318,40 @@ const styles = StyleSheet.create({
     color: '#37352F',
     letterSpacing: -0.2,
   },
-  form: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 20,
+  closeButton: {
+    padding: 4,
   },
-  inputGroup: {
-    marginBottom: 20,
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  section: {
+    marginBottom: 24,
   },
   label: {
     fontSize: 13,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  urlContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  urlText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
   },
   input: {
     backgroundColor: '#ffffffff',
@@ -229,6 +362,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 15,
     color: '#000000ff',
+  },
+  inputReadOnly: {
+    backgroundColor: '#F5F5F5',
+    color: '#666',
+  },
+  textArea: {
+    minHeight: 100,
+    paddingTop: 14,
   },
   folderSelector: {
     flexDirection: 'row',
@@ -245,6 +386,40 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: '#666',
+  },
+  folderList: {
+    marginTop: 8,
+    backgroundColor: '#ffffffff',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 12,
+    maxHeight: 250,
+    overflow: 'hidden',
+  },
+  folderItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F4F4F5',
+  },
+  folderItemSelected: {
+    backgroundColor: '#F0F9FF',
+  },
+  folderIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  folderItemText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#37352F',
+    fontWeight: '500',
   },
   hint: {
     fontSize: 12,

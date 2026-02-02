@@ -1,6 +1,10 @@
-import React, { useEffect, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { useSelector } from 'react-redux';
+import React, { useMemo, useCallback, useState } from 'react';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { makeResourceFavorite } from '../features/resources/resourceThunk';
+import { useResources } from '../features/resources/resourceHooks';
+import LinkItem from '../components/LinkItem';
+import MoveToFolderSheet from '../modals/MoveToFolderSheet';
 
 // Simple EmptyState component
 const EmptyState = ({ icon, title, message }) => (
@@ -11,69 +15,64 @@ const EmptyState = ({ icon, title, message }) => (
   </View>
 );
 
-// Simple LinkItem component
-const LinkItem = ({ title, url, description, folder, isFavorite, onPress }) => (
-  <TouchableOpacity style={linkItemStyles.container} onPress={onPress}>
-    <View style={linkItemStyles.content}>
-      <Text style={linkItemStyles.title} numberOfLines={1}>{title || 'Untitled'}</Text>
-      <Text style={linkItemStyles.url} numberOfLines={1}>{url}</Text>
-      {description && <Text style={linkItemStyles.description} numberOfLines={2}>{description}</Text>}
-    </View>
-    <Text style={linkItemStyles.favorite}>{isFavorite ? '⭐' : ''}</Text>
-  </TouchableOpacity>
-);
-
-const linkItemStyles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#fff',
-    marginBottom: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  content: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  url: {
-    fontSize: 14,
-    color: '#007AFF',
-    marginBottom: 4,
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-  },
-  favorite: {
-    fontSize: 20,
-  },
-});
-
 export default function FavoritesScreen() {
+  const dispatch = useDispatch();
+  const { deleteResource, updateResource } = useResources();
   const { items: resources = [] } = useSelector((state) => state.resources);
   const favorites = useMemo(() => resources.filter(r => r.isFavorite), [resources]);
+  const [moveToFolderSheetVisible, setMoveToFolderSheetVisible] = useState(false);
+  const [resourceToMove, setResourceToMove] = useState(null);
   
   const handleLinkPress = useCallback((resource) => console.log('Resource pressed:', resource), []);
+  
+  const handleToggleFavorite = useCallback(async (resource) => {
+    try {
+      await dispatch(makeResourceFavorite({ id: resource._id || resource.id, isFavorite: resource.isFavorite })).unwrap();
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
+  }, [dispatch]);
+
+  const handleDelete = useCallback(async (resource) => {
+    try {
+      await deleteResource(resource._id || resource.id);
+    } catch (error) {
+      console.error('Failed to delete resource:', error);
+    }
+  }, [deleteResource]);
+
+  const handleMoveToFolder = useCallback(async (folderId) => {
+    if (!resourceToMove) return;
+    
+    try {
+      await updateResource(resourceToMove._id || resourceToMove.id, { folderId });
+      setMoveToFolderSheetVisible(false);
+      setResourceToMove(null);
+    } catch (error) {
+      console.error('Failed to move resource:', error);
+    }
+  }, [resourceToMove, updateResource]);
 
   const renderItem = useCallback(({ item }) => (
     <LinkItem
       title={item.title}
       url={item.url}
       description={item.description}
-      folder={item.folderName}
+      tags={item.tags}
+      folder={item.folderName || item.folder}
       isFavorite={item.isFavorite}
+      type={item.type}
       onPress={() => handleLinkPress(item)}
+      onMoveToFolder={() => {
+        setResourceToMove(item);
+        setMoveToFolderSheetVisible(true);
+      }}
+      onToggleFavorite={() => handleToggleFavorite(item)}
+      onDelete={() => handleDelete(item)}
     />
-  ), [handleLinkPress]);
+  ), [handleLinkPress, handleToggleFavorite, handleDelete]);
 
-  const keyExtractor = useCallback((item) => item._id || item.id, []);
+  const keyExtractor = useCallback((item) => item._id || item.id || String(item.url), []);
 
   return (
     <View style={styles.safeArea}>
@@ -102,6 +101,17 @@ export default function FavoritesScreen() {
         />
       )}
       </View>
+
+      <MoveToFolderSheet
+        visible={moveToFolderSheetVisible}
+        onClose={() => {
+          setMoveToFolderSheetVisible(false);
+          setResourceToMove(null);
+        }}
+        onMove={handleMoveToFolder}
+        currentFolderId={resourceToMove?.folderId || null}
+        resourceTitle={resourceToMove?.title}
+      />
     </View>
   );
 }

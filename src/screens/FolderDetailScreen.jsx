@@ -2,21 +2,27 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useResources } from '../features/resources/resourceHooks';
+import { makeResourceFavorite } from '../features/resources/resourceThunk';
+import { useDispatch } from 'react-redux';
 import LinkItem from '../components/LinkItem';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import EditResourceModal from '../modals/EditResourceModal';
+import MoveToFolderSheet from '../modals/MoveToFolderSheet';
 
 export default function FolderDetailScreen({ route = { params: { folder: { _id: '1', name: 'Sample Folder' } } } }) {
+  const dispatch = useDispatch();
   const navigation = useNavigation();
   const { folder } = route.params;
-  const { resources = [], updateResource } = useResources();
+  const { resources = [], updateResource, deleteResource } = useResources();
 
   // Get resources by folder
   const folderResources = resources.filter(r => r.folderId === folder._id);
   const [modalVisible, setModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
+  const [moveToFolderSheetVisible, setMoveToFolderSheetVisible] = useState(false);
+  const [resourceToMove, setResourceToMove] = useState(null);
 
   const handleEdit = (resource) => {
     setSelectedResource(resource);
@@ -30,6 +36,34 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
       setSelectedResource(null);
     } catch (error) {
       console.error('Failed to update resource:', error);
+    }
+  };
+
+  const handleToggleFavorite = async (resource) => {
+    try {
+      await dispatch(makeResourceFavorite({ id: resource._id, isFavorite: resource.isFavorite })).unwrap();
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
+  };
+
+  const handleDelete = async (resource) => {
+    try {
+      await deleteResource(resource._id);
+    } catch (error) {
+      console.error('Failed to delete resource:', error);
+    }
+  };
+
+  const handleMoveToFolder = async (folderId) => {
+    if (!resourceToMove) return;
+    
+    try {
+      await updateResource(resourceToMove._id, { folderId });
+      setMoveToFolderSheetVisible(false);
+      setResourceToMove(null);
+    } catch (error) {
+      console.error('Failed to move resource:', error);
     }
   };
 
@@ -103,6 +137,12 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
                 type={resource.type}
                 onPress={() => handleLinkPress(resource)}
                 onEdit={() => handleEdit(resource)}
+                onMoveToFolder={() => {
+                  setResourceToMove(resource);
+                  setMoveToFolderSheetVisible(true);
+                }}
+                onToggleFavorite={() => handleToggleFavorite(resource)}
+                onDelete={() => handleDelete(resource)}
               />
             ))}
           </View>
@@ -164,6 +204,17 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
         }}
         resource={selectedResource}
         onSave={handleSaveEdit}
+      />
+
+      <MoveToFolderSheet
+        visible={moveToFolderSheetVisible}
+        onClose={() => {
+          setMoveToFolderSheetVisible(false);
+          setResourceToMove(null);
+        }}
+        onMove={handleMoveToFolder}
+        currentFolderId={resourceToMove?.folderId || null}
+        resourceTitle={resourceToMove?.title}
       />
     </SafeAreaView>
   );

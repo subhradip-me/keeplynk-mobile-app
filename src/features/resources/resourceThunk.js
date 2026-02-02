@@ -78,3 +78,16 @@ export const searchResources = createAsyncThunk(
         }
     }
 );
+
+// Toggle resource favorite status
+export const makeResourceFavorite = createAsyncThunk(
+    'resources/makeResourceFavorite',
+    async ({ id, isFavorite }, { rejectWithValue }) => {
+        try {
+            const data = await resourcesAPI.update(id, { isFavorite: !isFavorite });
+            return data.data || data;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);

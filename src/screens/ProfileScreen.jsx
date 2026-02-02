@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable } from 'react-native';
 import AccountSheet from '../modals/AccountSheet';
 import { Colors, Spacing, BorderRadius, FontSizes, FontWeights, Shadows } from '../constants/theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -34,7 +34,17 @@ export default function ProfileScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Profile</Text>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Icon name="arrow-back" size={24} color="#37352F" />
+        </Pressable>
+        <View style={styles.headerContent}>
+          <View style={styles.profileIcon}>
+            <Icon name="person" size={24} color="#2563EB" />
+          </View>
+          <View style={styles.headerText}>
+            <Text style={styles.title}>Profile</Text>
+          </View>
+        </View>
       </View>
 
       <ScrollView style={styles.content}>
@@ -151,18 +161,40 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.backgroundTertiary,
   },
   header: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.lg,
-    backgroundColor: Colors.backgroundTertiary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
+    borderBottomColor: '#EBEBEA',
+    gap: 8,
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  profileIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerText: {
+    flex: 1,
   },
   title: {
-    fontSize: FontSizes.xxxl,
-    fontWeight: FontWeights.bold,
-    color: Colors.textPrimary,
-    letterSpacing: -0.5,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#37352F',
+    letterSpacing: -0.3,
   },
   content: {
     flex: 1,

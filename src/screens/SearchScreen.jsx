@@ -2,12 +2,16 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useDispatch } from 'react-redux';
 import LinkItem from '../components/LinkItem';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
+import { makeResourceFavorite } from '../features/resources/resourceThunk';
 import EditResourceModal from '../modals/EditResourceModal';
+import MoveToFolderSheet from '../modals/MoveToFolderSheet';
 
 export default function SearchScreen() {
+  const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [selectionMode, setSelectionMode] = useState(null); // null, 'folder', 'tag'
@@ -18,6 +22,8 @@ export default function SearchScreen() {
   });
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
+  const [moveToFolderSheetVisible, setMoveToFolderSheetVisible] = useState(false);
+  const [resourceToMove, setResourceToMove] = useState(null);
 
   // Call hooks unconditionally
   const resourcesHook = useResources();
@@ -26,6 +32,8 @@ export default function SearchScreen() {
   const resources = useMemo(() => resourcesHook?.resources || [], [resourcesHook?.resources]);
   const folders = useMemo(() => foldersHook?.folders || [], [foldersHook?.folders]);
   const loading = resourcesHook?.loading || false;
+  const deleteResource = resourcesHook?.deleteResource;
+  const updateResource = resourcesHook?.updateResource;
 
   // Fetch data on mount
   useEffect(() => {
@@ -214,6 +222,38 @@ export default function SearchScreen() {
     setSelectedResource(null);
   };
 
+  const handleToggleFavorite = async (resource) => {
+    try {
+      await dispatch(makeResourceFavorite({ id: resource._id || resource.id, isFavorite: resource.isFavorite })).unwrap();
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
+  };
+
+  const handleDelete = async (resource) => {
+    try {
+      if (deleteResource) {
+        await deleteResource(resource._id || resource.id);
+      }
+    } catch (error) {
+      console.error('Failed to delete resource:', error);
+    }
+  };
+
+  const handleMoveToFolder = async (folderId) => {
+    if (!resourceToMove) return;
+    
+    try {
+      if (updateResource) {
+        await updateResource(resourceToMove._id || resourceToMove.id, { folderId });
+        setMoveToFolderSheetVisible(false);
+        setResourceToMove(null);
+      }
+    } catch (error) {
+      console.error('Failed to move resource:', error);
+    }
+  };
+
   const toggleFavorites = () => {
     setActiveFilters(prev => ({
       ...prev,
@@ -329,19 +369,28 @@ export default function SearchScreen() {
                 <Text style={styles.loadingText}>Searching...</Text>
               </View>
             ) : filteredResults.length > 0 ? (
-              filteredResults.map((resource, index) => (
-                <LinkItem
-                  key={resource._id || resource.id || index}
-                  title={resource.title}
-                  url={resource.url}
-                  description={resource.description}
-                  tags={resource.tags}
-                  folder={resource.folder || resource.folderName}
-                  isFavorite={resource.isFavorite}
-                  type={resource.type}
-                  onEdit={() => handleEdit(resource)}
-                />
-              ))
+              filteredResults.map((resource) => {
+                const key = resource._id || resource.id || resource.url;
+                return (
+                  <LinkItem
+                    key={key}
+                    title={resource.title}
+                    url={resource.url}
+                    description={resource.description}
+                    tags={resource.tags}
+                    folder={resource.folder || resource.folderName}
+                    isFavorite={resource.isFavorite}
+                    type={resource.type}
+                    onEdit={() => handleEdit(resource)}
+                    onMoveToFolder={() => {
+                      setResourceToMove(resource);
+                      setMoveToFolderSheetVisible(true);
+                    }}
+                    onToggleFavorite={() => handleToggleFavorite(resource)}
+                    onDelete={() => handleDelete(resource)}
+                  />
+                );
+              })
             ) : null}
             {!loading && filteredResults.length === 0 && (
               <View style={styles.emptyState}>
@@ -435,19 +484,28 @@ export default function SearchScreen() {
                 {resources.length > 0 && (
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Recent Resources</Text>
-                    {resources.slice(0, 10).map((resource, index) => (
-                      <LinkItem
-                        key={resource._id || resource.id || index}
-                        title={resource.title}
-                        url={resource.url}
-                        description={resource.description}
-                        tags={resource.tags}
-                        folder={resource.folder || resource.folderName}
-                        isFavorite={resource.isFavorite}
-                        type={resource.type}
-                        onEdit={() => handleEdit(resource)}
-                      />
-                    ))}
+                    {resources.slice(0, 10).map((resource) => {
+                      const key = resource._id || resource.id || resource.url;
+                      return (
+                        <LinkItem
+                          key={key}
+                          title={resource.title}
+                          url={resource.url}
+                          description={resource.description}
+                          tags={resource.tags}
+                          folder={resource.folder || resource.folderName}
+                          isFavorite={resource.isFavorite}
+                          type={resource.type}
+                          onEdit={() => handleEdit(resource)}
+                          onMoveToFolder={() => {
+                            setResourceToMove(resource);
+                            setMoveToFolderSheetVisible(true);
+                          }}
+                          onToggleFavorite={() => handleToggleFavorite(resource)}
+                          onDelete={() => handleDelete(resource)}
+                        />
+                      );
+                    })}
                   </View>
                 )}
 
@@ -566,6 +624,17 @@ export default function SearchScreen() {
         }}
         resource={selectedResource}
         onSave={handleSaveEdit}
+      />
+
+      <MoveToFolderSheet
+        visible={moveToFolderSheetVisible}
+        onClose={() => {
+          setMoveToFolderSheetVisible(false);
+          setResourceToMove(null);
+        }}
+        onMove={handleMoveToFolder}
+        currentFolderId={resourceToMove?.folderId || null}
+        resourceTitle={resourceToMove?.title}
       />
     </SafeAreaView>
   );

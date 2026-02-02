@@ -8,14 +8,18 @@ import EmptyState from '../components/EmptyState';
 import AccountSheet from '../modals/AccountSheet';
 import EditResourceModal from '../modals/EditResourceModal';
 import PreviewResourceModal from '../modals/PreviewResourceModal';
+import MoveToFolderSheet from '../modals/MoveToFolderSheet';
 import { useAuth } from '../features/auth/authHooks';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
+import { makeResourceFavorite } from '../features/resources/resourceThunk';
+import { useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
+  const dispatch = useDispatch();
   const { user } = useAuth();
-  const { resources, fetchResources } = useResources();
+  const { resources, fetchResources, deleteResource, updateResource } = useResources();
   const { folders, fetchFolders } = useFolders();
   const [activeTab, setActiveTab] = useState('All');
   const [accountSheetVisible, setAccountSheetVisible] = useState(false);
@@ -23,6 +27,8 @@ export default function HomeScreen() {
   const [selectedItems, setSelectedItems] = useState([]);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
+  const [moveToFolderSheetVisible, setMoveToFolderSheetVisible] = useState(false);
+  const [resourceToMove, setResourceToMove] = useState(null);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewResource, setPreviewResource] = useState(null);
 
@@ -78,15 +84,33 @@ export default function HomeScreen() {
     setPreviewModalVisible(true);
   }, []);
 
-  const handleDelete = useCallback((resource) => {
-    console.log('Delete resource:', resource);
-    // TODO: Dispatch delete action
-  }, []);
+  const handleDelete = useCallback(async (resource) => {
+    try {
+      await deleteResource(resource._id);
+    } catch (error) {
+      console.error('Failed to delete resource:', error);
+    }
+  }, [deleteResource]);
 
-  const handleToggleFavorite = useCallback((resource) => {
-    console.log('Toggle favorite:', resource);
-    // TODO: Dispatch toggle favorite action
-  }, []);
+  const handleToggleFavorite = useCallback(async (resource) => {
+    try {
+      await dispatch(makeResourceFavorite({ id: resource._id, isFavorite: resource.isFavorite })).unwrap();
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
+  }, [dispatch]);
+
+  const handleMoveToFolder = useCallback(async (folderId) => {
+    if (!resourceToMove) return;
+    
+    try {
+      await updateResource(resourceToMove._id, { folderId });
+      setMoveToFolderSheetVisible(false);
+      setResourceToMove(null);
+    } catch (error) {
+      console.error('Failed to move resource:', error);
+    }
+  }, [resourceToMove, updateResource]);
 
   // const handleDeleteSelected = useCallback(() => {
   //   console.log('Delete selected:', selectedItems);
@@ -109,26 +133,33 @@ export default function HomeScreen() {
 
   // Filter resources based on active tab
   const filteredResources = useMemo(() => {
+    let filtered;
     switch (activeTab) {
       case 'All':
-        return resources;
+        filtered = resources;
+        break;
       
       case 'Recent':
-        return [...resources].sort((a, b) => 
+        filtered = [...resources].sort((a, b) => 
           new Date(b.createdAt) - new Date(a.createdAt)
         );
+        break;
       
       case 'Uncategorised':
-        return resources.filter(
+        filtered = resources.filter(
           resource => !resource.folderId || resource.tags.length === 0
         );
+        break;
       
       case 'Favourite':
-        return resources.filter(resource => resource.isFavorite);
+        filtered = resources.filter(resource => resource.isFavorite);
+        break;
       
       default:
-        return resources;
+        filtered = resources;
     }
+    
+    return filtered;
   }, [activeTab, resources]);
 
   const renderItem = useCallback(({ item }) => {
@@ -148,6 +179,12 @@ export default function HomeScreen() {
           onPress={() => handleLinkPress(item)}
           onLongPress={isUncategorised ? () => handleLongPress(item) : undefined}
           onEdit={() => handleEdit(item)}
+          onMoveToFolder={() => {
+            setResourceToMove(item);
+            setMoveToFolderSheetVisible(true);
+          }}
+          onDelete={() => handleDelete(item)}
+          onToggleFavorite={() => handleToggleFavorite(item)}
         />
         {isSelected && (
           <View style={styles.selectionCheckmark}>
@@ -156,9 +193,9 @@ export default function HomeScreen() {
         )}
       </View>
     );
-  }, [handleLinkPress, handleLongPress, handleEdit, folderMap, selectedItems, activeTab]);
+  }, [handleLinkPress, handleLongPress, handleEdit, handleDelete, handleToggleFavorite, folderMap, selectedItems, activeTab]);
 
-  const keyExtractor = useCallback((item) => item._id || item.id, []);
+  const keyExtractor = useCallback((item) => item._id || item.id || String(item.url), []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -211,9 +248,10 @@ export default function HomeScreen() {
         data={filteredResources}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
+        extraData={selectedItems}
         contentContainerStyle={styles.linkList}
         showsVerticalScrollIndicator={false}
-        removeClippedSubviews={true}
+        removeClippedSubviews={false}
         maxToRenderPerBatch={10}
         updateCellsBatchingPeriod={50}
         initialNumToRender={10}
@@ -260,6 +298,17 @@ export default function HomeScreen() {
         }}
         resource={selectedResource}
         onSave={handleSaveEdit}
+      />
+
+      <MoveToFolderSheet
+        visible={moveToFolderSheetVisible}
+        onClose={() => {
+          setMoveToFolderSheetVisible(false);
+          setResourceToMove(null);
+        }}
+        onMove={handleMoveToFolder}
+        currentFolderId={resourceToMove?.folderId || null}
+        resourceTitle={resourceToMove?.title}
       />
     </SafeAreaView>
   );

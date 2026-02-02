@@ -9,13 +9,16 @@ import {
   Animated,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useFolders } from '../features/folders/folderHooks';
 
 
 export default function AddResourceModal({ visible, onClose, onSave }) {
+  const { folders } = useFolders();
   const [resourceType, setResourceType] = useState('url');
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
-  const [selectedFolder, setSelectedFolder] = useState('');
+  const [selectedFolderId, setSelectedFolderId] = useState(null);
+  const [folderExpanded, setFolderExpanded] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(300)).current;
 
   React.useEffect(() => {
@@ -40,7 +43,7 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
     const resource = {
       url: url.trim(),
       title: title.trim() || 'Untitled',
-      folder: selectedFolder || 'Uncategorised',
+      folderId: selectedFolderId,
     };
 
     onSave?.(resource);
@@ -48,7 +51,7 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
     // Clear form
     setUrl('');
     setTitle('');
-    setSelectedFolder('');
+    setSelectedFolderId(null);
     onClose();
   };
 
@@ -138,13 +141,74 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
                 {/* Folder Selector */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Folder</Text>
-                  <Pressable style={styles.folderSelector}>
+                  <Pressable 
+                    style={styles.folderSelector}
+                    onPress={() => setFolderExpanded(!folderExpanded)}
+                  >
                     <Icon name="folder-open" size={20} color="#666" />
                     <Text style={styles.folderText}>
-                      {selectedFolder || 'Select folder'}
+                      {folders.find(f => (f._id || f.id) === selectedFolderId)?.name || 'Uncategorised'}
                     </Text>
-                    <Icon name="chevron-right" size={20} color="#999" />
+                    <Icon 
+                      name={folderExpanded ? "expand-less" : "expand-more"} 
+                      size={20} 
+                      color="#999" 
+                    />
                   </Pressable>
+                  
+                  {/* Expanded Folder List */}
+                  {folderExpanded && (
+                    <View style={styles.folderList}>
+                      {/* Uncategorised Option */}
+                      <Pressable
+                        style={[styles.folderItem, selectedFolderId === null && styles.folderItemSelected]}
+                        onPress={() => {
+                          setSelectedFolderId(null);
+                          setFolderExpanded(false);
+                        }}
+                      >
+                        <View style={[styles.folderIconContainer, { backgroundColor: '#E5E7EB' }]}>
+                          <Icon name="folder-open" size={16} color="#6B7280" />
+                        </View>
+                        <Text style={styles.folderItemText}>Uncategorised</Text>
+                        {selectedFolderId === null && (
+                          <Icon name="check" size={18} color="#2563EB" />
+                        )}
+                      </Pressable>
+                      
+                      {/* Folder Items */}
+                      {folders.map((folder) => {
+                        const isSelected = selectedFolderId === (folder._id || folder.id);
+                        return (
+                          <Pressable
+                            key={folder._id || folder.id}
+                            style={[styles.folderItem, isSelected && styles.folderItemSelected]}
+                            onPress={() => {
+                              setSelectedFolderId(folder._id || folder.id);
+                              setFolderExpanded(false);
+                            }}
+                          >
+                            <View 
+                              style={[
+                                styles.folderIconContainer,
+                                { backgroundColor: folder.color ? `${folder.color}15` : '#F3F4F6' }
+                              ]}
+                            >
+                              <Icon 
+                                name={folder.icon || 'folder'} 
+                                size={16} 
+                                color={folder.color || '#6B7280'} 
+                              />
+                            </View>
+                            <Text style={styles.folderItemText}>{folder.name}</Text>
+                            {isSelected && (
+                              <Icon name="check" size={18} color="#2563EB" />
+                            )}
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  )}
                 </View>
               </>
             ) : (
@@ -178,13 +242,74 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
                 {/* Folder Selector */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Folder</Text>
-                  <Pressable style={styles.folderSelector}>
+                  <Pressable 
+                    style={styles.folderSelector}
+                    onPress={() => setFolderExpanded(!folderExpanded)}
+                  >
                     <Icon name="folder-open" size={20} color="#666" />
                     <Text style={styles.folderText}>
-                      {selectedFolder || 'Select folder'}
+                      {folders.find(f => (f._id || f.id) === selectedFolderId)?.name || 'Uncategorised'}
                     </Text>
-                    <Icon name="chevron-right" size={20} color="#999" />
+                    <Icon 
+                      name={folderExpanded ? "expand-less" : "expand-more"} 
+                      size={20} 
+                      color="#999" 
+                    />
                   </Pressable>
+                  
+                  {/* Expanded Folder List */}
+                  {folderExpanded && (
+                    <View style={styles.folderList}>
+                      {/* Uncategorised Option */}
+                      <Pressable
+                        style={[styles.folderItem, selectedFolderId === null && styles.folderItemSelected]}
+                        onPress={() => {
+                          setSelectedFolderId(null);
+                          setFolderExpanded(false);
+                        }}
+                      >
+                        <View style={[styles.folderIconContainer, { backgroundColor: '#E5E7EB' }]}>
+                          <Icon name="folder-open" size={16} color="#6B7280" />
+                        </View>
+                        <Text style={styles.folderItemText}>Uncategorised</Text>
+                        {selectedFolderId === null && (
+                          <Icon name="check" size={18} color="#2563EB" />
+                        )}
+                      </Pressable>
+                      
+                      {/* Folder Items */}
+                      {folders.map((folder) => {
+                        const isSelected = selectedFolderId === (folder._id || folder.id);
+                        return (
+                          <Pressable
+                            key={folder._id || folder.id}
+                            style={[styles.folderItem, isSelected && styles.folderItemSelected]}
+                            onPress={() => {
+                              setSelectedFolderId(folder._id || folder.id);
+                              setFolderExpanded(false);
+                            }}
+                          >
+                            <View 
+                              style={[
+                                styles.folderIconContainer,
+                                { backgroundColor: folder.color ? `${folder.color}15` : '#F3F4F6' }
+                              ]}
+                            >
+                              <Icon 
+                                name={folder.icon || 'folder'} 
+                                size={16} 
+                                color={folder.color || '#6B7280'} 
+                              />
+                            </View>
+                            <Text style={styles.folderItemText}>{folder.name}</Text>
+                            {isSelected && (
+                              <Icon name="check" size={18} color="#2563EB" />
+                            )}
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  )}
                 </View>
               </>
             )}
@@ -202,7 +327,6 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
           >
             <Text style={styles.saveButtonText}>Save Resource</Text>
           </Pressable>
-
         </Animated.View>
       </View>
     </Modal>
@@ -337,6 +461,40 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: '#666',
+  },
+  folderList: {
+    marginTop: 8,
+    backgroundColor: '#ffffffff',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 12,
+    maxHeight: 250,
+    overflow: 'hidden',
+  },
+  folderItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F4F4F5',
+  },
+  folderItemSelected: {
+    backgroundColor: '#F0F9FF',
+  },
+  folderIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  folderItemText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#37352F',
+    fontWeight: '500',
   },
   uploadSection: {
     marginBottom: 20,
