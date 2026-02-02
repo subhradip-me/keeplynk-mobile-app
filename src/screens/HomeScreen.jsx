@@ -6,6 +6,8 @@ import HomeTabs from '../components/HomeTabs';
 import LinkItem from '../components/LinkItem';
 import EmptyState from '../components/EmptyState';
 import AccountSheet from '../modals/AccountSheet';
+import EditResourceModal from '../modals/EditResourceModal';
+import PreviewResourceModal from '../modals/PreviewResourceModal';
 import { useAuth } from '../features/auth/authHooks';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
@@ -19,6 +21,10 @@ export default function HomeScreen() {
   const [accountSheetVisible, setAccountSheetVisible] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [selectedResource, setSelectedResource] = useState(null);
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [previewResource, setPreviewResource] = useState(null);
 
   useEffect(() => {
     fetchResources();
@@ -26,21 +32,7 @@ export default function HomeScreen() {
   }, [fetchResources, fetchFolders]);
 
   const handleMorePress = useCallback(() => console.log('More pressed'), []);
-  const handleLinkPress = useCallback((link) => {
-    if (selectionMode && activeTab === 'Uncategorised') {
-      toggleSelection(link._id);
-    } else {
-      console.log('Link pressed:', link);
-    }
-  }, [selectionMode, activeTab, toggleSelection]);
-
-  const handleLongPress = useCallback((link) => {
-    if (activeTab === 'Uncategorised') {
-      setSelectionMode(true);
-      setSelectedItems([link._id]);
-    }
-  }, [activeTab]);
-
+  
   const toggleSelection = useCallback((itemId) => {
     setSelectedItems(prev => 
       prev.includes(itemId) 
@@ -49,9 +41,51 @@ export default function HomeScreen() {
     );
   }, []);
 
+  const handleLinkPress = useCallback((link) => {
+    if (selectionMode && activeTab === 'Uncategorised') {
+      toggleSelection(link._id);
+    } else {
+      handlePreview(link);
+    }
+  }, [selectionMode, activeTab, toggleSelection, handlePreview]);
+
+  const handleLongPress = useCallback((link) => {
+    if (activeTab === 'Uncategorised') {
+      setSelectionMode(true);
+      setSelectedItems([link._id]);
+    }
+  }, [activeTab]);
+
   const exitSelectionMode = useCallback(() => {
     setSelectionMode(false);
     setSelectedItems([]);
+  }, []);
+
+  const handleEdit = useCallback((resource) => {
+    setSelectedResource(resource);
+    setEditModalVisible(true);
+  }, []);
+
+  const handleSaveEdit = useCallback((updatedResource) => {
+    console.log('Save edited resource:', updatedResource);
+    // TODO: Dispatch update action
+    setEditModalVisible(false);
+    setSelectedResource(null);
+  }, []);
+
+  const handlePreview = useCallback((resource) => {
+    setPreviewResource(resource);
+    setPreviewModalVisible(true);
+  }, []);
+
+  const handleDelete = useCallback((resource) => {
+    console.log('Delete resource:', resource);
+    // TODO: Dispatch delete action
+  }, []);
+
+  const handleToggleFavorite = useCallback((resource) => {
+    console.log('Toggle favorite:', resource);
+    // TODO: Dispatch toggle favorite action
   }, []);
 
   // const handleDeleteSelected = useCallback(() => {
@@ -113,6 +147,7 @@ export default function HomeScreen() {
           type={item.type}
           onPress={() => handleLinkPress(item)}
           onLongPress={isUncategorised ? () => handleLongPress(item) : undefined}
+          onEdit={() => handleEdit(item)}
         />
         {isSelected && (
           <View style={styles.selectionCheckmark}>
@@ -121,7 +156,7 @@ export default function HomeScreen() {
         )}
       </View>
     );
-  }, [handleLinkPress, handleLongPress, folderMap, selectedItems, activeTab]);
+  }, [handleLinkPress, handleLongPress, handleEdit, folderMap, selectedItems, activeTab]);
 
   const keyExtractor = useCallback((item) => item._id || item.id, []);
 
@@ -196,6 +231,35 @@ export default function HomeScreen() {
         visible={accountSheetVisible}
         onClose={() => setAccountSheetVisible(false)}
         user={user}
+      />
+
+      <PreviewResourceModal
+      
+      visible={previewModalVisible}
+      onClose={() => setPreviewModalVisible(false)}
+      resource={previewResource}
+      onEdit={() => {
+        setPreviewModalVisible(false);
+        setTimeout(() => handleEdit(previewResource), 300);
+      }}
+      onDelete={() => {
+        setPreviewModalVisible(false);
+        handleDelete(previewResource);
+      }}
+      onToggleFavorite={() => {
+        setPreviewModalVisible(false);
+        handleToggleFavorite(previewResource);
+      }}
+      />
+
+      <EditResourceModal
+        visible={editModalVisible}
+        onClose={() => {
+          setEditModalVisible(false);
+          setSelectedResource(null);
+        }}
+        resource={selectedResource}
+        onSave={handleSaveEdit}
       />
     </SafeAreaView>
   );

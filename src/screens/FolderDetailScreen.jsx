@@ -5,15 +5,33 @@ import { useResources } from '../features/resources/resourceHooks';
 import LinkItem from '../components/LinkItem';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import EditResourceModal from '../modals/EditResourceModal';
 
 export default function FolderDetailScreen({ route = { params: { folder: { _id: '1', name: 'Sample Folder' } } } }) {
   const navigation = useNavigation();
   const { folder } = route.params;
-  const { resources = [] } = useResources();
-  
+  const { resources = [], updateResource } = useResources();
+
   // Get resources by folder
   const folderResources = resources.filter(r => r.folderId === folder._id);
   const [modalVisible, setModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [selectedResource, setSelectedResource] = useState(null);
+
+  const handleEdit = (resource) => {
+    setSelectedResource(resource);
+    setEditModalVisible(true);
+  };
+
+  const handleSaveEdit = async (updatedResource) => {
+    try {
+      await updateResource(selectedResource._id, updatedResource);
+      setEditModalVisible(false);
+      setSelectedResource(null);
+    } catch (error) {
+      console.error('Failed to update resource:', error);
+    }
+  };
 
   const menuItems = [
     { icon: 'edit', label: 'Edit Folder', action: () => console.log('Edit Folder') },
@@ -84,6 +102,7 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
                 isFavorite={resource.isFavorite}
                 type={resource.type}
                 onPress={() => handleLinkPress(resource)}
+                onEdit={() => handleEdit(resource)}
               />
             ))}
           </View>
@@ -97,9 +116,9 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
         animationType="none"
         onRequestClose={closeModal}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
           onPress={closeModal}
         >
           <View style={styles.modalContainer}>
@@ -117,12 +136,12 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
                     closeModal();
                   }}
                 >
-                  <Icon 
-                    name={item.icon} 
-                    size={20} 
-                    color={item.danger ? '#EF4444' : '#37352F'} 
+                  <Icon
+                    name={item.icon}
+                    size={20}
+                    color={item.danger ? '#EF4444' : '#37352F'}
                   />
-                  <Text 
+                  <Text
                     style={[
                       styles.menuItemText,
                       item.danger && styles.menuItemTextDanger
@@ -136,6 +155,16 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <EditResourceModal
+        visible={editModalVisible}
+        onClose={() => {
+          setEditModalVisible(false);
+          setSelectedResource(null);
+        }}
+        resource={selectedResource}
+        onSave={handleSaveEdit}
+      />
     </SafeAreaView>
   );
 }

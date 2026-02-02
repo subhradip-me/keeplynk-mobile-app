@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinkItem from '../components/LinkItem';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
+import EditResourceModal from '../modals/EditResourceModal';
 
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -15,11 +16,13 @@ export default function SearchScreen() {
     selectedFolder: null,
     selectedTag: null,
   });
-  
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [selectedResource, setSelectedResource] = useState(null);
+
   // Call hooks unconditionally
   const resourcesHook = useResources();
   const foldersHook = useFolders();
-  
+
   const resources = useMemo(() => resourcesHook?.resources || [], [resourcesHook?.resources]);
   const folders = useMemo(() => foldersHook?.folders || [], [foldersHook?.folders]);
   const loading = resourcesHook?.loading || false;
@@ -30,7 +33,7 @@ export default function SearchScreen() {
     if (foldersHook?.fetchFolders) foldersHook.fetchFolders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
+
   // Trigger backend search when query changes
   useEffect(() => {
     if (searchQuery.trim().length > 2 && resourcesHook?.searchResources) {
@@ -69,24 +72,24 @@ export default function SearchScreen() {
     // Apply search query (works for all lengths)
     if (query.length > 0) {
       // Find folders matching the search query
-      const matchingFolders = folders.filter(f => 
+      const matchingFolders = folders.filter(f =>
         f.name?.toLowerCase().includes(query)
       );
       const matchingFolderIds = matchingFolders.map(f => f._id);
-      
+
       // Find tags matching the search query
       const matchingTags = allTags.filter(tag => {
         const tagName = typeof tag === 'object' ? tag.name : tag;
         return tagName && tagName.toLowerCase().includes(query);
       });
       const matchingTagNames = matchingTags.map(tag => typeof tag === 'object' ? tag.name : tag);
-      
+
       filtered = filtered.filter(r => {
         // Show resources that belong to matching folders
         if (matchingFolderIds.length > 0 && matchingFolderIds.includes(r.folderId)) {
           return true;
         }
-        
+
         // Show resources that have matching tags
         if (matchingTagNames.length > 0 && r.tags?.some(tag => {
           const tagName = typeof tag === 'object' ? tag.name : tag;
@@ -94,29 +97,29 @@ export default function SearchScreen() {
         })) {
           return true;
         }
-        
+
         // Search in title
         if (r.title?.toLowerCase().includes(query)) return true;
-        
+
         // Search in URL
         if (r.url?.toLowerCase().includes(query)) return true;
-        
+
         // Search in description
         if (r.description?.toLowerCase().includes(query)) return true;
-        
+
         // Search in tags (direct match)
         if (r.tags?.some(tag => {
           const tagName = typeof tag === 'object' ? tag.name : tag;
           return tagName && typeof tagName === 'string' && tagName.toLowerCase().includes(query);
         })) return true;
-        
+
         // Search in folder name
         const folderName = typeof r.folder === 'object' ? r.folder?.name : r.folder;
         if (folderName && typeof folderName === 'string' && folderName.toLowerCase().includes(query)) return true;
-        
+
         // Also check folderName field if it exists
         if (r.folderName && typeof r.folderName === 'string' && r.folderName.toLowerCase().includes(query)) return true;
-        
+
         return false;
       });
     }
@@ -133,7 +136,7 @@ export default function SearchScreen() {
 
     // Apply tag filter
     if (activeFilters.selectedTag) {
-      filtered = filtered.filter(r => 
+      filtered = filtered.filter(r =>
         r.tags?.some(tag => {
           const tagName = typeof tag === 'object' ? tag.name : tag;
           return tagName === activeFilters.selectedTag;
@@ -144,16 +147,16 @@ export default function SearchScreen() {
     return filtered;
   }, [searchQuery, resources, folders, allTags, activeFilters]);
 
-  const showResults = searchQuery.trim().length > 0 || 
-                      activeFilters.favoritesOnly || 
-                      activeFilters.selectedFolder || 
-                      activeFilters.selectedTag;
+  const showResults = searchQuery.trim().length > 0 ||
+    activeFilters.favoritesOnly ||
+    activeFilters.selectedFolder ||
+    activeFilters.selectedTag;
 
   const popularTags = useMemo(() => {
     // Get unique tag names from tag objects
     const uniqueTagNames = new Set();
     const tagMap = new Map();
-    
+
     allTags.forEach(tag => {
       const tagName = typeof tag === 'object' ? tag.name : tag;
       if (tagName && typeof tagName === 'string' && tagName.trim().length > 0 && !uniqueTagNames.has(tagName)) {
@@ -161,10 +164,10 @@ export default function SearchScreen() {
         tagMap.set(tagName, tag);
       }
     });
-    
+
     return Array.from(tagMap.values()).slice(0, 8);
   }, [allTags]);
-  
+
   const frequentFolders = useMemo(() => {
     // Ensure folders are valid objects with _id and name
     return folders
@@ -200,6 +203,17 @@ export default function SearchScreen() {
     });
   };
 
+  const handleEdit = (resource) => {
+    setSelectedResource(resource);
+    setEditModalVisible(true);
+  };
+
+  const handleSaveEdit = async (updatedResource) => {
+    console.log('Save edited resource:', updatedResource);
+    setEditModalVisible(false);
+    setSelectedResource(null);
+  };
+
   const toggleFavorites = () => {
     setActiveFilters(prev => ({
       ...prev,
@@ -208,9 +222,9 @@ export default function SearchScreen() {
   };
 
   const filterItems = [
-    { 
-      icon: activeFilters.favoritesOnly ? 'favorite' : 'favorite-border', 
-      label: 'Favorites Only', 
+    {
+      icon: activeFilters.favoritesOnly ? 'favorite' : 'favorite-border',
+      label: 'Favorites Only',
       action: toggleFavorites,
       active: activeFilters.favoritesOnly,
     },
@@ -226,9 +240,9 @@ export default function SearchScreen() {
       action: () => setSelectionMode('tag'),
       active: !!activeFilters.selectedTag,
     },
-    { 
-      icon: 'clear', 
-      label: 'Clear Filters', 
+    {
+      icon: 'clear',
+      label: 'Clear Filters',
       action: () => {
         clearSearch();
         setSelectionMode(null);
@@ -262,7 +276,7 @@ export default function SearchScreen() {
             </Pressable>
           )}
         </View>
-        <Pressable 
+        <Pressable
           style={styles.filterButton}
           onPress={() => setFilterModalVisible(true)}
         >
@@ -325,6 +339,7 @@ export default function SearchScreen() {
                   folder={resource.folder || resource.folderName}
                   isFavorite={resource.isFavorite}
                   type={resource.type}
+                  onEdit={() => handleEdit(resource)}
                 />
               ))
             ) : null}
@@ -351,18 +366,18 @@ export default function SearchScreen() {
                   <Text style={styles.selectionHeaderTitle}>Select Folder</Text>
                 </View>
                 {folders.map((folder, index) => (
-                  <Pressable 
-                    key={folder._id || `folder-${index}`} 
+                  <Pressable
+                    key={folder._id || `folder-${index}`}
                     style={[
                       styles.selectionItem,
                       activeFilters.selectedFolder === folder._id && styles.selectionItemActive,
                     ]}
                     onPress={() => handleFolderPress(folder._id)}
                   >
-                    <Icon 
-                      name="folder" 
-                      size={20} 
-                      color={activeFilters.selectedFolder === folder._id ? '#2563EB' : '#787774'} 
+                    <Icon
+                      name="folder"
+                      size={20}
+                      color={activeFilters.selectedFolder === folder._id ? '#2563EB' : '#787774'}
                     />
                     <Text style={[
                       styles.selectionItemText,
@@ -430,6 +445,7 @@ export default function SearchScreen() {
                         folder={resource.folder || resource.folderName}
                         isFavorite={resource.isFavorite}
                         type={resource.type}
+                        onEdit={() => handleEdit(resource)}
                       />
                     ))}
                   </View>
@@ -442,8 +458,8 @@ export default function SearchScreen() {
                       {popularTags.map((tag, index) => {
                         const tagName = typeof tag === 'object' ? tag.name : tag;
                         return (
-                          <Pressable 
-                            key={`tag-${tagName}-${index}`} 
+                          <Pressable
+                            key={`tag-${tagName}-${index}`}
                             style={[
                               styles.tag,
                               activeFilters.selectedTag === tagName && styles.tagActive,
@@ -467,18 +483,18 @@ export default function SearchScreen() {
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Folders</Text>
                     {frequentFolders.map((folder, index) => (
-                      <Pressable 
-                        key={folder._id || `folder-${index}`} 
+                      <Pressable
+                        key={folder._id || `folder-${index}`}
                         style={[
                           styles.folderItem,
                           activeFilters.selectedFolder === folder._id && styles.folderItemActive,
                         ]}
                         onPress={() => handleFolderPress(folder._id)}
                       >
-                        <Icon 
-                          name="folder" 
-                          size={18} 
-                          color={activeFilters.selectedFolder === folder._id ? '#2563EB' : '#787774'} 
+                        <Icon
+                          name="folder"
+                          size={18}
+                          color={activeFilters.selectedFolder === folder._id ? '#2563EB' : '#787774'}
                         />
                         <Text style={[
                           styles.folderText,
@@ -503,9 +519,9 @@ export default function SearchScreen() {
         animationType="none"
         onRequestClose={closeFilterModal}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
           onPress={closeFilterModal}
         >
           <View style={styles.modalContainer}>
@@ -524,10 +540,10 @@ export default function SearchScreen() {
                     closeFilterModal();
                   }}
                 >
-                  <Icon 
-                    name={item.icon} 
-                    size={20} 
-                    color={item.active ? "#2563EB" : "#37352F"} 
+                  <Icon
+                    name={item.icon}
+                    size={20}
+                    color={item.active ? "#2563EB" : "#37352F"}
                   />
                   <Text style={[
                     styles.menuItemText,
@@ -541,6 +557,16 @@ export default function SearchScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <EditResourceModal
+        visible={editModalVisible}
+        onClose={() => {
+          setEditModalVisible(false);
+          setSelectedResource(null);
+        }}
+        resource={selectedResource}
+        onSave={handleSaveEdit}
+      />
     </SafeAreaView>
   );
 }
@@ -721,7 +747,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     position: 'absolute',
-    top: 62   ,
+    top: 62,
     right: 16,
   },
   modalContent: {

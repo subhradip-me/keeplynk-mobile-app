@@ -7,9 +7,12 @@ A modern React Native mobile application for managing and organizing your links,
 - 🔐 **User Authentication** - Secure JWT token-based login and registration with Axios interceptors
 - 📁 **Folder Management** - Create, edit, organize resources in color-coded folders
 - 🔗 **Resource Management** - Save and manage URLs, links, and bookmarks
+- 👁️ **Resource Preview** - Tap any resource to view details in a beautiful modal with copy-to-clipboard
+- ✏️ **Edit Resources** - Full-featured edit modal with Redux integration for updating resources
 - 🏷️ **Tag System** - Categorize resources with tags (displays "Untagged" for untagged items)
-- 🔍 **Smart Search** - Real-time search across all resources
+- 🔍 **Smart Search** - Real-time search across all resources with folder and tag filtering
 - ⭐ **Favorites** - Mark and filter important resources
+- 📋 **Copy to Clipboard** - Quick copy resource URLs with visual feedback
 - 🎯 **Smart Selection Mode** - Long-press to select and organize uncategorised items
 - 🤖 **AI Auto-Organize** - Intelligent resource organization with gradient action button
 - 🎨 **Notion-Inspired UI** - Clean, modern interface with consistent design system
@@ -27,6 +30,7 @@ A modern React Native mobile application for managing and organizing your links,
 - **React Native Linear Gradient** - Gradient UI elements
 - **React Native Safe Area Context** - Safe area handling
 - **React Native Screens** - Native screen optimization
+- **React Native Clipboard** - Copy to clipboard functionality (@react-native-clipboard/clipboard)
 
 ## 📋 Prerequisites
 
@@ -100,7 +104,12 @@ KeepLynk/
 │   │   ├── auth/        # Authentication (slice, thunks, hooks, selectors)
 │   │   ├── folders/     # Folder management
 │   │   └── resources/   # Resource management
-│   ├── modals/          # Modal components (AccountSheet, AddResourceModal, etc.)
+│   ├── modals/          # Modal components
+│   │   ├── AccountSheet.jsx       # Account management modal
+│   │   ├── AddResourceModal.jsx   # Add new resource
+│   │   ├── EditResourceModal.jsx  # Edit existing resource
+│   │   ├── NewFolderModal.jsx     # Create new folder
+│   │   └── PreviewResourceModal.jsx # Preview resource details
 │   ├── navigations/     # Navigation setup (RootStack, FoldersStack, BottomTabs)
 │   ├── screens/         # Screen components
 │   │   ├── AuthScreen.jsx
@@ -134,12 +143,15 @@ KeepLynk/
 ### Folder Management
 - Create, edit, and delete color-coded folders
 - Organize resources by folders with visual badges
-- Nested navigation to folder details
-- Folder lookup mapping for efficient data access
-
-### Resource Management
-- Add URLs and links with metadata
-- Edit resource details
+- **Preview resources** with tap - view all details in a beautiful modal
+- **Edit resource details** with Redux-integrated edit modal
+- **Copy URLs** to clipboard with visual feedback animation
+- Tag resources (displays "Untagged" for items without tags)
+- Mark as favorites with star icon
+- Associate with folders with color-coded badges
+- Long-press selection mode for batch operations
+- Menu actions: Edit, Move to Folder, Favorite, Delete
+- Favicon display with automatic fallback icons
 - Tag resources (displays "Untagged" for items without tags)
 - Mark as favorites with star icon
 - Associate with folders with color-coded badges

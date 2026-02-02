@@ -2,16 +2,17 @@ import React, { useState, useRef, memo } from 'react';
 import { View, Text, Pressable, StyleSheet, Image, Modal, TouchableOpacity, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type = 'bookmark', onPress, onLongPress, onEdit, onDelete, onToggleFavorite }) => {
+const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type = 'bookmark', onPress, onLongPress, onEdit, onDelete, onToggleFavorite, resource }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 100, right: 16 });
+  const [faviconError, setFaviconError] = useState(false);
   const moreButtonRef = useRef(null);
   const windowHeight = Dimensions.get('window').height;
 
-  const getFavicon = (linkUrl) => {
-    if (!linkUrl) return null;
+  const getFavicon = (url) => {
+    if (!url) return null;
     try {
-      const domain = new URL(linkUrl).hostname;
+      const domain = new URL(url).hostname;
       return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
     } catch {
       return null;
@@ -43,14 +44,14 @@ const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type
       >
         {/* Icon/Favicon */}
         <View style={styles.iconContainer}>
-          {type === 'bookmark' && url ? (
+          {type === 'url' && url && !faviconError ? (
             <Image
               source={{ uri: getFavicon(url) }}
               style={styles.favicon}
-              onError={() => {}}
+              onError={() => setFaviconError(true)}
             />
           ) : (
-            <Icon name="insert-drive-file" size={18} color="#787774" />
+            <Icon name="language" size={18} color="#787774" />
           )}
         </View>
 
