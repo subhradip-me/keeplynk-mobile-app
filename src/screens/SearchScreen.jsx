@@ -6,7 +6,7 @@ import { useDispatch } from 'react-redux';
 import LinkItem from '../components/LinkItem';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
-import { makeResourceFavorite } from '../features/resources/resourceThunk';
+import { makeResourceFavorite, moveResourceToTrash, fetchResources } from '../features/resources/resourceThunk';
 import EditResourceModal from '../modals/EditResourceModal';
 import MoveToFolderSheet from '../modals/MoveToFolderSheet';
 
@@ -32,7 +32,6 @@ export default function SearchScreen() {
   const resources = useMemo(() => resourcesHook?.resources || [], [resourcesHook?.resources]);
   const folders = useMemo(() => foldersHook?.folders || [], [foldersHook?.folders]);
   const loading = resourcesHook?.loading || false;
-  const deleteResource = resourcesHook?.deleteResource;
   const updateResource = resourcesHook?.updateResource;
 
   // Fetch data on mount
@@ -75,7 +74,8 @@ export default function SearchScreen() {
   // Search and filter results
   const filteredResults = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
-    let filtered = Array.isArray(resources) ? resources : [];
+    // First, exclude trashed resources
+    let filtered = Array.isArray(resources) ? resources.filter(r => !r.isTrashed) : [];
 
     // Apply search query (works for all lengths)
     if (query.length > 0) {
@@ -232,11 +232,11 @@ export default function SearchScreen() {
 
   const handleDelete = async (resource) => {
     try {
-      if (deleteResource) {
-        await deleteResource(resource._id || resource.id);
-      }
+      await dispatch(moveResourceToTrash(resource._id || resource.id)).unwrap();
+      // Silently refetch in background to get properly populated tags
+      dispatch(fetchResources());
     } catch (error) {
-      console.error('Failed to delete resource:', error);
+      console.error('Failed to move resource to trash:', error);
     }
   };
 

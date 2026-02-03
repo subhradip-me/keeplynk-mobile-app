@@ -25,6 +25,14 @@ export const resourcesAPI = {
     const response = await apiService.deleteResource(id);
     return response;
   },
+  moveToTrash: async (id) => {
+    const response = await apiService.moveToTrash(id);
+    return response;
+  },
+  restoreFromTrash: async (id) => {
+    const response = await apiService.restoreFromTrash(id);
+    return response;
+  },
   getUnorganized: async () => {
     const response = await apiService.getUnorganizedResources();
     return response;

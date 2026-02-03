@@ -114,27 +114,7 @@ export default function MoveToFolderSheet({
             showsVerticalScrollIndicator={false}
           >
             {/* Uncategorised Option */}
-            <Pressable
-              style={({ pressed }) => [
-                styles.folderItem,
-                currentFolderId === null && styles.folderItemActive,
-                pressed && styles.folderItemPressed,
-              ]}
-              onPress={() => handleMoveToFolder(null)}
-            >
-              <View style={styles.folderLeft}>
-                <View style={[styles.folderIconContainer, { backgroundColor: '#E5E7EB' }]}>
-                  <Icon name="folder-open" size={20} color="#6B7280" />
-                </View>
-                <View style={styles.folderInfo}>
-                  <Text style={styles.folderName}>Uncategorised</Text>
-                  <Text style={styles.folderDescription}>No folder</Text>
-                </View>
-              </View>
-              {currentFolderId === null && (
-                <Icon name="check-circle" size={22} color="#2563EB" />
-              )}
-            </Pressable>
+            
 
             {/* Folder List */}
             {filteredFolders.length === 0 ? (

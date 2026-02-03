@@ -75,6 +75,16 @@ class ApiService {
     return response.data;
   }
 
+  async moveToTrash(id) {
+    const response = await apiClient.patch(`${API_ENDPOINTS.RESOURCES.BY_ID(id)}/trash`);
+    return response.data;
+  }
+
+  async restoreFromTrash(id) {
+    const response = await apiClient.patch(`${API_ENDPOINTS.RESOURCES.BY_ID(id)}/restore`);
+    return response.data;
+  }
+
   async searchResources(query, params = {}) {
     const response = await apiClient.get(API_ENDPOINTS.RESOURCES.SEARCH, {
       params: { q: query, ...params },

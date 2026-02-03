@@ -12,14 +12,14 @@ import MoveToFolderSheet from '../modals/MoveToFolderSheet';
 import { useAuth } from '../features/auth/authHooks';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
-import { makeResourceFavorite } from '../features/resources/resourceThunk';
+import { makeResourceFavorite, moveResourceToTrash, fetchResources as fetchResourcesThunk } from '../features/resources/resourceThunk';
 import { useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
   const { user } = useAuth();
-  const { resources, fetchResources, deleteResource, updateResource } = useResources();
+  const { resources, fetchResources, updateResource } = useResources();
   const { folders, fetchFolders } = useFolders();
   const [activeTab, setActiveTab] = useState('All');
   const [accountSheetVisible, setAccountSheetVisible] = useState(false);
@@ -86,11 +86,13 @@ export default function HomeScreen() {
 
   const handleDelete = useCallback(async (resource) => {
     try {
-      await deleteResource(resource._id);
+      await dispatch(moveResourceToTrash(resource._id)).unwrap();
+      // Silently refetch in background to get properly populated tags
+      dispatch(fetchResourcesThunk());
     } catch (error) {
-      console.error('Failed to delete resource:', error);
+      console.error('Failed to move resource to trash:', error);
     }
-  }, [deleteResource]);
+  }, [dispatch]);
 
   const handleToggleFavorite = useCallback(async (resource) => {
     try {
@@ -133,30 +135,33 @@ export default function HomeScreen() {
 
   // Filter resources based on active tab
   const filteredResources = useMemo(() => {
+    // First, exclude trashed resources
+    const activeResources = resources.filter(r => !r.isTrashed);
+    
     let filtered;
     switch (activeTab) {
       case 'All':
-        filtered = resources;
+        filtered = activeResources;
         break;
       
       case 'Recent':
-        filtered = [...resources].sort((a, b) => 
+        filtered = [...activeResources].sort((a, b) => 
           new Date(b.createdAt) - new Date(a.createdAt)
         );
         break;
       
       case 'Uncategorised':
-        filtered = resources.filter(
+        filtered = activeResources.filter(
           resource => !resource.folderId || resource.tags.length === 0
         );
         break;
       
       case 'Favourite':
-        filtered = resources.filter(resource => resource.isFavorite);
+        filtered = activeResources.filter(resource => resource.isFavorite);
         break;
       
       default:
-        filtered = resources;
+        filtered = activeResources;
     }
     
     return filtered;

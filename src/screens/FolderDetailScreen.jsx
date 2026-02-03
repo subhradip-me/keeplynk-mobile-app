@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useResources } from '../features/resources/resourceHooks';
-import { makeResourceFavorite } from '../features/resources/resourceThunk';
+import { makeResourceFavorite, moveResourceToTrash, fetchResources } from '../features/resources/resourceThunk';
 import { useDispatch } from 'react-redux';
 import LinkItem from '../components/LinkItem';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -14,10 +14,10 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const { folder } = route.params;
-  const { resources = [], updateResource, deleteResource } = useResources();
+  const { resources = [], updateResource } = useResources();
 
-  // Get resources by folder
-  const folderResources = resources.filter(r => r.folderId === folder._id);
+  // Get resources by folder (excluding trashed)
+  const folderResources = resources.filter(r => r.folderId === folder._id && !r.isTrashed);
   const [modalVisible, setModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
@@ -49,9 +49,11 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
 
   const handleDelete = async (resource) => {
     try {
-      await deleteResource(resource._id);
+      await dispatch(moveResourceToTrash(resource._id)).unwrap();
+      // Silently refetch in background to get properly populated tags
+      dispatch(fetchResources());
     } catch (error) {
-      console.error('Failed to delete resource:', error);
+      console.error('Failed to move resource to trash:', error);
     }
   };
 

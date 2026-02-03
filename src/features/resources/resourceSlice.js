@@ -7,6 +7,8 @@ import {
     deleteResource,
     searchResources,
     makeResourceFavorite,
+    moveResourceToTrash,
+    restoreResourceFromTrash,
 } from './resourceThunk';
 
 // Helper function to deduplicate resources
@@ -167,6 +169,44 @@ const resourceSlice = createSlice({
                 state.items = deduplicateResources(state.items);
             })
             .addCase(makeResourceFavorite.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+            
+            // Move to Trash
+            .addCase(moveResourceToTrash.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(moveResourceToTrash.fulfilled, (state, action) => {
+                state.loading = false;
+                const updatedResource = action.payload;
+                const resourceId = updatedResource._id || updatedResource.id;
+                const index = state.items.findIndex(r => (r._id || r.id) === resourceId);
+                if (index !== -1) {
+                    state.items[index] = updatedResource;
+                }
+            })
+            .addCase(moveResourceToTrash.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+            
+            // Restore from Trash
+            .addCase(restoreResourceFromTrash.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(restoreResourceFromTrash.fulfilled, (state, action) => {
+                state.loading = false;
+                const updatedResource = action.payload;
+                const resourceId = updatedResource._id || updatedResource.id;
+                const index = state.items.findIndex(r => (r._id || r.id) === resourceId);
+                if (index !== -1) {
+                    state.items[index] = updatedResource;
+                }
+            })
+            .addCase(restoreResourceFromTrash.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             });

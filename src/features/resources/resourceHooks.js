@@ -7,6 +7,8 @@ import {
     updateResource as updateResourceAction,
     deleteResource as deleteResourceAction,
     searchResources as searchResourcesAction,
+    moveResourceToTrash as moveResourceToTrashAction,
+    restoreResourceFromTrash as restoreResourceFromTrashAction,
 } from './resourceThunk';
 import { 
     clearError, 
@@ -35,6 +37,8 @@ export const useResources = () => {
     const createResource = useCallback((resourceData) => dispatch(createResourceAction(resourceData)), [dispatch]);
     const updateResource = useCallback((id, resourceData) => dispatch(updateResourceAction({ id, resourceData })), [dispatch]);
     const deleteResource = useCallback((id) => dispatch(deleteResourceAction(id)), [dispatch]);
+    const moveToTrash = useCallback((id) => dispatch(moveResourceToTrashAction(id)), [dispatch]);
+    const restoreFromTrash = useCallback((id) => dispatch(restoreResourceFromTrashAction(id)), [dispatch]);
     const searchResources = useCallback((query, params) => dispatch(searchResourcesAction({ query, params })), [dispatch]);
     const setCurrentResourceCallback = useCallback((resource) => dispatch(setCurrentResource(resource)), [dispatch]);
     const clearErrorCallback = useCallback(() => dispatch(clearError()), [dispatch]);
@@ -51,6 +55,8 @@ export const useResources = () => {
         createResource,
         updateResource,
         deleteResource,
+        moveToTrash,
+        restoreFromTrash,
         searchResources,
         setCurrentResource: setCurrentResourceCallback,
         clearError: clearErrorCallback,

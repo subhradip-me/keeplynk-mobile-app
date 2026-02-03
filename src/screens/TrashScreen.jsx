@@ -1,10 +1,13 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinkItem from '../components/LinkItem';
+import { useResources } from '../features/resources/resourceHooks';
+import { useFolders } from '../features/folders/folderHooks';
+import { restoreResourceFromTrash, deleteResource, fetchResources } from '../features/resources/resourceThunk';
 
 // Simple EmptyState component for trash
 const EmptyState = ({ icon, title, message }) => (
@@ -16,17 +19,27 @@ const EmptyState = ({ icon, title, message }) => (
 );
 
 export default function TrashScreen() {
+  const dispatch = useDispatch();
   const navigation = useNavigation();
-  const { items: resources = [] } = useSelector((state) => state.resources);
-  const [selectedItems, setSelectedItems] = useState([]);
+  const { resources = [] } = useResources();
+  const { folders } = useFolders();
   
-  // Filter deleted resources (assuming we'll add a 'deleted' or 'isDeleted' flag)
+  // Create a folder lookup map
+  const folderMap = useMemo(() => {
+    const map = {};
+    folders?.forEach(folder => {
+      map[folder._id] = { name: folder.name, color: folder.color };
+    });
+    return map;
+  }, [folders]);
+  
+  // Filter deleted resources
   const trashedResources = useMemo(() => 
-    resources.filter(r => r.isDeleted || r.deleted), 
+    resources.filter(r => r.isTrashed), 
     [resources]
   );
 
-  const handleRestore = useCallback((resource) => {
+  const handleRestore = useCallback(async (resource) => {
     Alert.alert(
       'Restore Item',
       `Restore "${resource.title}" from trash?`,
@@ -34,16 +47,22 @@ export default function TrashScreen() {
         { text: 'Cancel', style: 'cancel' },
         { 
           text: 'Restore', 
-          onPress: () => {
-            console.log('Restore resource:', resource);
-            // TODO: Implement restore functionality
+          onPress: async () => {
+            try {
+              await dispatch(restoreResourceFromTrash(resource._id)).unwrap();
+              // Silently refetch in background to get properly populated tags
+              dispatch(fetchResources());
+            } catch (error) {
+              Alert.alert('Error', 'Failed to restore resource');
+              console.error('Failed to restore resource:', error);
+            }
           }
         },
       ]
     );
-  }, []);
+  }, [dispatch]);
 
-  const handlePermanentDelete = useCallback((resource) => {
+  const handlePermanentDelete = useCallback(async (resource) => {
     Alert.alert(
       'Delete Permanently',
       `Permanently delete "${resource.title}"? This cannot be undone.`,
@@ -52,16 +71,20 @@ export default function TrashScreen() {
         { 
           text: 'Delete', 
           style: 'destructive',
-          onPress: () => {
-            console.log('Permanently delete resource:', resource);
-            // TODO: Implement permanent delete functionality
+          onPress: async () => {
+            try {
+              await dispatch(deleteResource(resource._id)).unwrap();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete resource');
+              console.error('Failed to delete resource:', error);
+            }
           }
         },
       ]
     );
-  }, []);
+  }, [dispatch]);
 
-  const handleEmptyTrash = useCallback(() => {
+  const handleEmptyTrash = useCallback(async () => {
     if (trashedResources.length === 0) return;
     
     Alert.alert(
@@ -72,16 +95,24 @@ export default function TrashScreen() {
         { 
           text: 'Empty Trash', 
           style: 'destructive',
-          onPress: () => {
-            console.log('Empty all trash');
-            // TODO: Implement empty trash functionality
+          onPress: async () => {
+            try {
+              await Promise.all(
+                trashedResources.map(resource => 
+                  dispatch(deleteResource(resource._id)).unwrap()
+                )
+              );
+            } catch (error) {
+              Alert.alert('Error', 'Failed to empty trash');
+              console.error('Failed to empty trash:', error);
+            }
           }
         },
       ]
     );
-  }, [trashedResources.length]);
+  }, [trashedResources, dispatch]);
 
-  const handleRestoreAll = useCallback(() => {
+  const handleRestoreAll = useCallback(async () => {
     if (trashedResources.length === 0) return;
     
     Alert.alert(
@@ -91,58 +122,41 @@ export default function TrashScreen() {
         { text: 'Cancel', style: 'cancel' },
         { 
           text: 'Restore All', 
-          onPress: () => {
-            console.log('Restore all trash');
-            // TODO: Implement restore all functionality
+          onPress: async () => {
+            try {
+              await Promise.all(
+                trashedResources.map(resource => 
+                  dispatch(restoreResourceFromTrash(resource._id)).unwrap()
+                )
+              );
+              // Silently refetch in background to get properly populated tags
+              dispatch(fetchResources());
+            } catch (error) {
+              Alert.alert('Error', 'Failed to restore all resources');
+              console.error('Failed to restore all resources:', error);
+            }
           }
         },
       ]
     );
-  }, [trashedResources.length]);
+  }, [trashedResources, dispatch]);
 
   const renderTrashItem = useCallback(({ item }) => (
-    <View style={styles.trashItem}>
-      <View style={styles.trashItemContent}>
-        <View style={styles.trashIconContainer}>
-          <Icon name="delete-outline" size={20} color="#EF4444" />
-        </View>
-        <View style={styles.trashItemDetails}>
-          <Text style={styles.trashItemTitle} numberOfLines={1}>
-            {item.title || 'Untitled'}
-          </Text>
-          {item.url && (
-            <Text style={styles.trashItemUrl} numberOfLines={1}>
-              {item.url}
-            </Text>
-          )}
-          {item.description && (
-            <Text style={styles.trashItemDescription} numberOfLines={2}>
-              {item.description}
-            </Text>
-          )}
-          <Text style={styles.trashItemDate}>
-            Deleted {new Date(item.deletedAt || Date.now()).toLocaleDateString()}
-          </Text>
-        </View>
-      </View>
-      <View style={styles.trashItemActions}>
-        <Pressable 
-          style={styles.actionButton}
-          onPress={() => handleRestore(item)}
-        >
-          <Icon name="restore" size={20} color="#2563EB" />
-          <Text style={styles.actionButtonText}>Restore</Text>
-        </Pressable>
-        <Pressable 
-          style={[styles.actionButton, styles.deleteButton]}
-          onPress={() => handlePermanentDelete(item)}
-        >
-          <Icon name="delete-forever" size={20} color="#EF4444" />
-          <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Delete</Text>
-        </Pressable>
-      </View>
-    </View>
-  ), [handleRestore, handlePermanentDelete]);
+    <LinkItem
+      title={item.title}
+      url={item.url}
+      description={item.description}
+      tags={item.tags}
+      folder={item.folderName || (item.folderId ? folderMap[item.folderId] : null)}
+      isFavorite={item.isFavorite}
+      type={item.type}
+      onPress={() => {}} // No action on press in trash
+      onEdit={() => handleRestore(item)} // Use edit for restore
+      onMoveToFolder={() => {}} // Disable move in trash
+      onDelete={() => handlePermanentDelete(item)}
+      onToggleFavorite={() => {}} // Disable favorite toggle in trash
+    />
+  ), [handleRestore, handlePermanentDelete, folderMap]);
 
   const keyExtractor = useCallback((item) => item._id || item.id || String(item.url), []);
 
@@ -300,82 +314,6 @@ const styles = StyleSheet.create({
   list: {
     padding: 12,
     paddingBottom: 32,
-  },
-  trashItem: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#E4E4E7',
-  },
-  trashItemContent: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  trashIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#FEE2E2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trashItemDetails: {
-    flex: 1,
-    gap: 4,
-  },
-  trashItemTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#37352F',
-    letterSpacing: -0.2,
-  },
-  trashItemUrl: {
-    fontSize: 12,
-    color: '#2563EB',
-    marginTop: 2,
-  },
-  trashItemDescription: {
-    fontSize: 13,
-    color: '#787774',
-    lineHeight: 18,
-    marginTop: 4,
-  },
-  trashItemDate: {
-    fontSize: 11,
-    color: '#9B9A97',
-    marginTop: 4,
-  },
-  trashItemActions: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F4F4F5',
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    backgroundColor: '#EFF6FF',
-  },
-  deleteButton: {
-    backgroundColor: '#FEF2F2',
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2563EB',
-  },
-  deleteButtonText: {
-    color: '#EF4444',
   },
   emptyStateContainer: {
     flex: 1,

@@ -91,3 +91,29 @@ export const makeResourceFavorite = createAsyncThunk(
         }
     }
 );
+
+// Move resource to trash
+export const moveResourceToTrash = createAsyncThunk(
+    'resources/moveResourceToTrash',
+    async (id, { rejectWithValue }) => {
+        try {
+            const data = await resourcesAPI.moveToTrash(id);
+            return data.data || data;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+// Restore resource from trash
+export const restoreResourceFromTrash = createAsyncThunk(
+    'resources/restoreResourceFromTrash',
+    async (id, { rejectWithValue }) => {
+        try {
+            const data = await resourcesAPI.restoreFromTrash(id);
+            return data.data || data;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
