@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -47,7 +47,7 @@ const ICONS = [
 ];
 
 
-export default function NewFolderModal({ visible, onClose, onSave }) {
+export default function EditFolderModal({ visible, onClose, onSave, folder }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLORS[0].value);
@@ -55,7 +55,17 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
   const [isSaving, setIsSaving] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(300)).current;
 
-  React.useEffect(() => {
+  // Initialize form with folder data when modal opens
+  useEffect(() => {
+    if (visible && folder) {
+      setName(folder.name || '');
+      setDescription(folder.description || '');
+      setSelectedColor(folder.color || COLORS[0].value);
+      setSelectedIcon(folder.icon || ICONS[0]);
+    }
+  }, [visible, folder]);
+
+  useEffect(() => {
     if (visible) {
       Animated.spring(slideAnim, {
         toValue: 0,
@@ -83,19 +93,19 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
     setIsSaving(true);
     
     try {
-      const folder = {
+      const updatedFolder = {
         name: name.trim(),
         description: description.trim() || '',
         color: selectedColor,
         icon: selectedIcon,
       };
 
-      await onSave?.(folder);
+      await onSave?.(updatedFolder);
       // Close modal after successful save
       onClose();
     } catch (error) {
-      Alert.alert('Error', 'Failed to create folder. Please try again.');
-      console.error('Error creating folder:', error);
+      Alert.alert('Error', 'Failed to update folder. Please try again.');
+      console.error('Error updating folder:', error);
     } finally {
       setIsSaving(false);
     }
@@ -122,7 +132,7 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
 
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>New Folder</Text>
+            <Text style={styles.title}>Edit Folder</Text>
           </View>
 
           {/* Form */}
@@ -225,7 +235,7 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
             disabled={!name.trim() || isSaving}
           >
             <Text style={styles.saveButtonText}>
-              {isSaving ? 'Creating...' : 'Create Folder'}
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </Text>
           </Pressable>
         </Animated.View>

@@ -74,11 +74,11 @@ const folderSlice = createSlice({
             })
             .addCase(updateFolder.fulfilled, (state, action) => {
                 state.loading = false;
-                const index = state.items.findIndex(f => f.id === action.payload.id);
+                const index = state.items.findIndex(f => f._id === action.payload._id);
                 if (index !== -1) {
                     state.items[index] = action.payload;
                 }
-                if (state.currentFolder?.id === action.payload.id) {
+                if (state.currentFolder?._id === action.payload._id) {
                     state.currentFolder = action.payload;
                 }
             })
@@ -94,8 +94,8 @@ const folderSlice = createSlice({
             })
             .addCase(deleteFolder.fulfilled, (state, action) => {
                 state.loading = false;
-                state.items = state.items.filter(f => f.id !== action.payload);
-                if (state.currentFolder?.id === action.payload) {
+                state.items = state.items.filter(f => f._id !== action.payload);
+                if (state.currentFolder?._id === action.payload) {
                     state.currentFolder = null;
                 }
             })

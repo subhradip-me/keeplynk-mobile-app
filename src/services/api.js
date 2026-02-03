@@ -120,7 +120,8 @@ class ApiService {
   }
 
   async updateFolder(id, folderData) {
-    const response = await apiClient.put(API_ENDPOINTS.FOLDERS.BY_ID(id), folderData);
+    const formattedData = formatFolderData(folderData);
+    const response = await apiClient.put(API_ENDPOINTS.FOLDERS.BY_ID(id), formattedData);
     return response.data;
   }
 

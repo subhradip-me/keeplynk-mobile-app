@@ -30,15 +30,19 @@ export default function FoldersScreen() {
     setModalVisible(false);
   }, []);
 
-  const handleSaveFolder = useCallback((folder) => {
-    createFolder({
-      name: folder.name,
-      description: folder.description,
-      color: '#3B82F6',
-      icon: 'folder',
-      isPrivate: false,
-    });
-    setNewFolderModalVisible(false);
+  const handleSaveFolder = useCallback(async (folder) => {
+    try {
+      await createFolder({
+        name: folder.name,
+        description: folder.description,
+        color: folder.color,
+        icon: folder.icon,
+        isPrivate: false,
+      });
+      setNewFolderModalVisible(false);
+    } catch (error) {
+      console.error('Failed to create folder:', error);
+    }
   }, [createFolder]);
 
   const handleFolderPress = useCallback((folder) => {

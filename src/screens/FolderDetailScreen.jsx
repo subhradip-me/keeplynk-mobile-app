@@ -2,27 +2,35 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useResources } from '../features/resources/resourceHooks';
+import { useFolders } from '../features/folders';
 import { makeResourceFavorite, moveResourceToTrash, fetchResources } from '../features/resources/resourceThunk';
 import { useDispatch } from 'react-redux';
 import LinkItem from '../components/LinkItem';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import EditResourceModal from '../modals/EditResourceModal';
+import EditFolderModal from '../modals/EditFolderModal';
 import MoveToFolderSheet from '../modals/MoveToFolderSheet';
 
 export default function FolderDetailScreen({ route = { params: { folder: { _id: '1', name: 'Sample Folder' } } } }) {
   const dispatch = useDispatch();
   const navigation = useNavigation();
-  const { folder } = route.params;
+  const { folder: routeFolder } = route.params;
   const { resources = [], updateResource } = useResources();
+  const { folders, updateFolder: updateFolderAction } = useFolders();
+
+  // Get the live folder from Redux state for real-time updates
+  const folder = folders.find(f => f._id === routeFolder._id) || routeFolder;
 
   // Get resources by folder (excluding trashed)
   const folderResources = resources.filter(r => r.folderId === folder._id && !r.isTrashed);
+  
   const [modalVisible, setModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
   const [moveToFolderSheetVisible, setMoveToFolderSheetVisible] = useState(false);
   const [resourceToMove, setResourceToMove] = useState(null);
+  const [editFolderModalVisible, setEditFolderModalVisible] = useState(false);
 
   const handleEdit = (resource) => {
     setSelectedResource(resource);
@@ -69,8 +77,19 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
     }
   };
 
+  const handleSaveFolder = async (updatedFolder) => {
+    try {
+      await updateFolderAction(folder._id, updatedFolder).unwrap();
+      setEditFolderModalVisible(false);
+      // Update will trigger re-render through Redux
+    } catch (error) {
+      console.error('Failed to update folder:', error);
+      throw error; // Re-throw so modal can show error
+    }
+  };
+
   const menuItems = [
-    { icon: 'edit', label: 'Edit Folder', action: () => console.log('Edit Folder') },
+    { icon: 'edit', label: 'Edit Folder', action: () => setEditFolderModalVisible(true) },
     { icon: 'share', label: 'Share', action: () => console.log('Share') },
     { icon: 'delete', label: 'Delete Folder', action: () => console.log('Delete Folder'), danger: true },
   ];
@@ -217,6 +236,13 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
         onMove={handleMoveToFolder}
         currentFolderId={resourceToMove?.folderId || null}
         resourceTitle={resourceToMove?.title}
+      />
+
+      <EditFolderModal
+        visible={editFolderModalVisible}
+        onClose={() => setEditFolderModalVisible(false)}
+        onSave={handleSaveFolder}
+        folder={folder}
       />
     </SafeAreaView>
   );
