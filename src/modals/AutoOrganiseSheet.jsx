@@ -1,0 +1,321 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  Animated,
+  ActivityIndicator,
+} from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import LinearGradient from 'react-native-linear-gradient';
+import { useTheme } from '../features/theme';
+
+export default function AutoOrganiseSheet({ 
+  visible, 
+  onClose, 
+  onOrganise,
+  selectedCount = 0 
+}) {
+  const { colors } = useTheme();
+  const [isOrganising, setIsOrganising] = useState(false);
+  const slideAnim = React.useRef(new Animated.Value(400)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 95,
+        friction: 10,
+      }).start();
+    } else {
+      slideAnim.setValue(400);
+    }
+  }, [visible, slideAnim]);
+
+  const handleOrganise = async () => {
+    setIsOrganising(true);
+    try {
+      await onOrganise?.();
+    } finally {
+      setIsOrganising(false);
+      onClose();
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity
+        style={styles.overlay}
+        activeOpacity={1}
+        onPress={onClose}
+      >
+        <Animated.View
+          style={[
+            styles.sheet,
+            { backgroundColor: colors.backgroundTertiary, transform: [{ translateY: slideAnim }] }
+          ]}
+          onStartShouldSetResponder={() => true}
+        >
+          {/* Handle */}
+          <View style={[styles.handle, { backgroundColor: colors.textPrimary }]} />
+
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.iconContainer}>
+              <LinearGradient
+                colors={['#FFD700', '#FDB931']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientIcon}
+              >
+                <Text style={styles.sparkleIcon}>✨</Text>
+              </LinearGradient>
+            </View>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+              Auto Organise
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+              Let AI organize your links automatically
+            </Text>
+          </View>
+
+          {/* Info Section */}
+          <View style={[styles.infoSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.infoRow}>
+              <Icon name="link" size={20} color={colors.textSecondary} />
+              <Text style={[styles.infoText, { color: colors.textPrimary }]}>
+                {selectedCount} {selectedCount === 1 ? 'link' : 'links'} selected
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Icon name="auto-awesome" size={20} color={colors.textSecondary} />
+              <Text style={[styles.infoText, { color: colors.textPrimary }]}>
+                AI will suggest folders and tags
+              </Text>
+            </View>
+          </View>
+
+          {/* Features */}
+          <View style={styles.features}>
+            <FeatureItem 
+              icon="folder"
+              text="Create or assign to existing folders"
+              colors={colors}
+            />
+            <FeatureItem 
+              icon="local-offer"
+              text="Generate relevant tags"
+              colors={colors}
+            />
+            <FeatureItem 
+              icon="smart-toy"
+              text="Smart categorization based on content"
+              colors={colors}
+            />
+          </View>
+
+          {/* Actions */}
+          <View style={styles.actions}>
+            <Pressable
+              onPress={handleOrganise}
+              disabled={isOrganising}
+              style={({ pressed }) => [
+                pressed && { opacity: 0.8 }
+              ]}
+            >
+              <LinearGradient
+                colors={['#FFD700', '#FDB931', '#E5E4E2']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.organiseButton}
+              >
+                {isOrganising ? (
+                  <ActivityIndicator color="#37352F" />
+                ) : (
+                  <>
+                    <Text style={styles.sparkle}>✨</Text>
+                    <Text style={styles.organiseButtonText}>Start Organising</Text>
+                  </>
+                )}
+              </LinearGradient>
+            </Pressable>
+
+            <Pressable
+              onPress={onClose}
+              disabled={isOrganising}
+              style={({ pressed }) => [
+                styles.cancelButton,
+                { backgroundColor: colors.surface },
+                pressed && { opacity: 0.7 }
+              ]}
+            >
+              <Text style={[styles.cancelButtonText, { color: colors.textPrimary }]}>
+                Cancel
+              </Text>
+            </Pressable>
+          </View>
+        </Animated.View>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
+function FeatureItem({ icon, text, colors }) {
+  return (
+    <View style={styles.featureItem}>
+      <View style={[styles.featureIconContainer, { backgroundColor: colors.backgroundSecondary }]}>
+        <Icon name={icon} size={18} color={colors.textSecondary} />
+      </View>
+      <Text style={[styles.featureText, { color: colors.textSecondary }]}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  sheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 32,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 20,
+    opacity: 0.3,
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+    alignItems: 'center',
+  },
+  iconContainer: {
+    marginBottom: 16,
+  },
+  gradientIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  sparkleIcon: {
+    fontSize: 32,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 6,
+    letterSpacing: -0.3,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    letterSpacing: -0.1,
+  },
+  infoSection: {
+    marginHorizontal: 24,
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  infoText: {
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: -0.1,
+  },
+  features: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+    gap: 12,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  featureIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureText: {
+    fontSize: 14,
+    flex: 1,
+    letterSpacing: -0.1,
+  },
+  actions: {
+    paddingHorizontal: 24,
+    gap: 12,
+  },
+  organiseButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  sparkle: {
+    fontSize: 18,
+  },
+  organiseButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#37352F',
+    letterSpacing: 0.2,
+  },
+  cancelButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+});

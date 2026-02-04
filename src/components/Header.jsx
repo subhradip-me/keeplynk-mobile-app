@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../features/auth/authHooks';
 import { useTheme } from '../features/theme';
 
-export default function Header({ onAccountPress, onMorePress }) {
+export default function Header({ onAccountPress, onMorePress, activeTab, onAutoOrganise }) {
   const { colors } = useTheme();
   const { user } = useAuth();
   const navigation = useNavigation();
@@ -49,6 +49,17 @@ export default function Header({ onAccountPress, onMorePress }) {
       </View>
       {/* Right side */}
       <View style={styles.rightSection}>
+        {activeTab === 'Uncategorised' && (
+          <Pressable 
+            onPress={() => onAutoOrganise?.()} 
+            style={({ pressed }) => [
+              styles.iconButton,
+              pressed && { backgroundColor: colors.hover }
+            ]}
+          >
+            <Icon name="smart-toy" size={20} color={colors.textSecondary} />
+          </Pressable>
+        )}
         <Pressable 
           onPress={handleMorePress} 
           style={({ pressed }) => [

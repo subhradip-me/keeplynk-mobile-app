@@ -9,6 +9,7 @@ import AccountSheet from '../modals/AccountSheet';
 import EditResourceModal from '../modals/EditResourceModal';
 import PreviewResourceModal from '../modals/PreviewResourceModal';
 import MoveToFolderSheet from '../modals/MoveToFolderSheet';
+import AutoOrganiseSheet from '../modals/AutoOrganiseSheet';
 import { useAuth } from '../features/auth/authHooks';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
@@ -33,6 +34,7 @@ export default function HomeScreen() {
   const [resourceToMove, setResourceToMove] = useState(null);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewResource, setPreviewResource] = useState(null);
+  const [autoOrganiseSheetVisible, setAutoOrganiseSheetVisible] = useState(false);
 
   useEffect(() => {
     fetchResources();
@@ -68,6 +70,11 @@ export default function HomeScreen() {
     setSelectionMode(false);
     setSelectedItems([]);
   }, []);
+
+  const handleSelectAll = useCallback(() => {
+    const allIds = filteredResources.map(resource => resource._id);
+    setSelectedItems(allIds);
+  }, [filteredResources]);
 
   const handleEdit = useCallback((resource) => {
     setSelectedResource(resource);
@@ -115,6 +122,12 @@ export default function HomeScreen() {
       console.error('Failed to move resource:', error);
     }
   }, [resourceToMove, updateResource]);
+
+  const handleAutoOrganise = useCallback(async () => {
+    console.log('Auto organising selected items:', selectedItems);
+    // TODO: Implement AI auto-organisation logic
+    // This will send selectedItems to AI service for categorization
+  }, [selectedItems]);
 
   // const handleDeleteSelected = useCallback(() => {
   //   console.log('Delete selected:', selectedItems);
@@ -210,6 +223,8 @@ export default function HomeScreen() {
       <Header
         onAccountPress={() => setAccountSheetVisible(true)}
         onMorePress={handleMorePress}
+        onAutoOrganise={() => setAutoOrganiseSheetVisible(true)}
+        activeTab={activeTab}
       />
 
       {/* Internal Tabs (filters, not navigation) */}
@@ -227,24 +242,31 @@ export default function HomeScreen() {
 
       {/* Selection Mode Header */}
       {selectionMode && activeTab === 'Uncategorised' && (
-        <View style={[styles.selectionHeader, { backgroundColor: colors.surface, borderBottomColor: colors.divider }]}>
-          
-          <Text style={[styles.selectionCount, { color: colors.textPrimary }]}>
-            {selectedItems.length} selected
-          </Text>
+        <View style={[styles.selectionHeader, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.border }]}>
+          <View style={styles.selectionLeft}>
+            <Text style={[styles.selectionCount, { color: colors.textPrimary }]}>
+              {selectedItems.length} selected
+            </Text>
+          </View>
           <View style={styles.selectionActions}>
-            <Pressable onPress={exitSelectionMode}>
-              <LinearGradient
-                colors={['#FFD700', '#FDB931', '#E5E4E2']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.autoOrganiseButton}
-              >
-                <Text style={styles.autoOrganiseText}>✨ Auto Organise</Text>
-              </LinearGradient>
+            <Pressable 
+              onPress={handleSelectAll}
+              style={({ pressed }) => [
+                styles.selectAllButton,
+                { backgroundColor: colors.backgroundTertiary },
+                pressed && { opacity: 0.7 }
+              ]}
+            >
+              <Text style={[styles.selectAllText, { color: colors.textPrimary }]}>Select All</Text>
             </Pressable>
-            <Pressable onPress={exitSelectionMode} style={[styles.cancelButton, { backgroundColor: colors.backgroundTertiary }]}>
-              <Text style={[styles.cancelButtonText, { color: colors.textPrimary }]}>Cancel</Text>
+            <Pressable 
+              onPress={exitSelectionMode} 
+              style={({ pressed }) => [
+                styles.cancelButton,
+                pressed && { opacity: 0.7 }
+              ]}
+            >
+              <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
             </Pressable>
           </View>
         </View>
@@ -317,6 +339,13 @@ export default function HomeScreen() {
         currentFolderId={resourceToMove?.folderId || null}
         resourceTitle={resourceToMove?.title}
       />
+
+      <AutoOrganiseSheet
+        visible={autoOrganiseSheetVisible}
+        onClose={() => setAutoOrganiseSheetVisible(false)}
+        onOrganise={handleAutoOrganise}
+        selectedCount={selectedItems.length}
+      />
     </SafeAreaView>
   );
 }
@@ -369,6 +398,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
   },
+  selectionLeft: {
+    flex: 1,
+  },
+  selectAllButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  selectAllText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
   cancelButton: {
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -386,22 +427,6 @@ const styles = StyleSheet.create({
   selectionActions: {
     flexDirection: 'row',
     gap: 8,
-  },
-  autoOrganiseButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  autoOrganiseText: {
-    fontSize: 14,
-    color: '#37352F',
-    fontWeight: '700',
-    letterSpacing: 0.3,
   },
   actionButton: {
     paddingVertical: 4,
