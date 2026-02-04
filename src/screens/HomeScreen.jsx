@@ -15,12 +15,14 @@ import { useFolders } from '../features/folders/folderHooks';
 import { makeResourceFavorite, moveResourceToTrash, fetchResources as fetchResourcesThunk } from '../features/resources/resourceThunk';
 import { useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../features/theme';
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
   const { user } = useAuth();
   const { resources, fetchResources, updateResource } = useResources();
   const { folders, fetchFolders } = useFolders();
+  const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState('All');
   const [accountSheetVisible, setAccountSheetVisible] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -203,7 +205,7 @@ export default function HomeScreen() {
   const keyExtractor = useCallback((item) => item._id || item.id || String(item.url), []);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
       {/* Global Header */}
       <Header
         onAccountPress={() => setAccountSheetVisible(true)}
@@ -225,9 +227,9 @@ export default function HomeScreen() {
 
       {/* Selection Mode Header */}
       {selectionMode && activeTab === 'Uncategorised' && (
-        <View style={styles.selectionHeader}>
+        <View style={[styles.selectionHeader, { backgroundColor: colors.surface, borderBottomColor: colors.divider }]}>
           
-          <Text style={styles.selectionCount}>
+          <Text style={[styles.selectionCount, { color: colors.textPrimary }]}>
             {selectedItems.length} selected
           </Text>
           <View style={styles.selectionActions}>
@@ -241,8 +243,8 @@ export default function HomeScreen() {
                 <Text style={styles.autoOrganiseText}>✨ Auto Organise</Text>
               </LinearGradient>
             </Pressable>
-            <Pressable onPress={exitSelectionMode} style={styles.cancelButton}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+            <Pressable onPress={exitSelectionMode} style={[styles.cancelButton, { backgroundColor: colors.backgroundTertiary }]}>
+              <Text style={[styles.cancelButtonText, { color: colors.textPrimary }]}>Cancel</Text>
             </Pressable>
           </View>
         </View>
@@ -322,7 +324,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FBFBFA',
   },
   linkList: {
     padding: 12,
@@ -331,19 +332,15 @@ const styles = StyleSheet.create({
   uncategorisedHeader: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
   },
   uncategorisedTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#37352F',
     marginBottom: 4,
   },
   uncategorisedSubtitle: {
     fontSize: 13,
-    color: '#787774',
   },
   selectedItemContainer: {
     position: 'relative',
@@ -370,25 +367,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
   },
   cancelButton: {
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 6,
-    backgroundColor: '#F7F6F3',
   },
   cancelButtonText: {
     fontSize: 14,
-    color: '#37352F',
     fontWeight: '500',
   },
   selectionCount: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#37352F',
     letterSpacing: -0.2,
   },
   selectionActions: {

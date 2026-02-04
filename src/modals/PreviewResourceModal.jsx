@@ -12,8 +12,10 @@ import {
 } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useTheme } from '../features/theme';
 
 export default function PreviewResourceModal({ visible, onClose, resource, onEdit, onDelete, onToggleFavorite }) {
+  const { colors } = useTheme();
   const slideAnim = React.useRef(new Animated.Value(300)).current;
   const [copied, setCopied] = useState(false);
 
@@ -71,26 +73,26 @@ export default function PreviewResourceModal({ visible, onClose, resource, onEdi
         <Animated.View
           style={[
             styles.modalContainer,
-            { transform: [{ translateY: slideAnim }] }
+            { backgroundColor: colors.backgroundTertiary, transform: [{ translateY: slideAnim }] }
           ]}
         >
           {/* Handle bar */}
-          <View style={styles.handleBar} />
+          <View style={[styles.handleBar, { backgroundColor: colors.textPrimary }]} />
 
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <View style={styles.headerLeft}>
               <Image
                 source={{ uri: getFavicon(resource.url) }}
                 style={styles.favicon}
                 onError={() => {}}
               />
-              <Text style={styles.title} numberOfLines={1}>
+              <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>
                 {resource.title || 'Untitled'}
               </Text>
             </View>
             <Pressable onPress={onClose} style={styles.closeButton}>
-              <Icon name="close" size={24} color="#37352F" />
+              <Icon name="close" size={24} color={colors.textPrimary} />
             </Pressable>
           </View>
 
@@ -98,10 +100,10 @@ export default function PreviewResourceModal({ visible, onClose, resource, onEdi
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {/* URL */}
             <View style={styles.section}>
-              <Text style={styles.label}>URL</Text>
-              <Pressable onPress={openUrl} style={styles.urlContainer}>
-                <Icon name="link" size={18} color="#2563EB" />
-                <Text style={styles.url} numberOfLines={2}>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>URL</Text>
+              <Pressable onPress={openUrl} style={[styles.urlContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Icon name="link" size={18} color={colors.primary} />
+                <Text style={[styles.url, { color: colors.primary }]} numberOfLines={2}>
                   {resource.url}
                 </Text>
                 <Pressable
@@ -114,9 +116,9 @@ export default function PreviewResourceModal({ visible, onClose, resource, onEdi
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   {copied ? (
-                    <Icon name="check" size={16} color="#16A34A" />
+                    <Icon name="check" size={16} color={colors.success} />
                   ) : (
-                    <Icon name="content-copy" size={16} color="#2563EB" />
+                    <Icon name="content-copy" size={16} color={colors.primary} />
                   )}
                 </Pressable>
               </Pressable>
@@ -125,22 +127,22 @@ export default function PreviewResourceModal({ visible, onClose, resource, onEdi
             {/* Description */}
             {resource.description && (
               <View style={styles.section}>
-                <Text style={styles.label}>Description</Text>
-                <Text style={styles.description}>{resource.description}</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Description</Text>
+                <Text style={[styles.description, { backgroundColor: colors.surfaceHover, borderColor: colors.border, color: colors.textPrimary }]}>{resource.description}</Text>
               </View>
             )}
 
             {/* Folder */}
             {resource.folder && (
               <View style={styles.section}>
-                <Text style={styles.label}>Folder</Text>
-                <View style={styles.folderBadge}>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Folder</Text>
+                <View style={[styles.folderBadge, { backgroundColor: colors.backgroundTertiary, borderColor: colors.border }]}>
                   <Icon 
                     name="folder" 
                     size={18} 
-                    color={typeof resource.folder === 'object' ? resource.folder.color : '#9333EA'} 
+                    color={typeof resource.folder === 'object' ? resource.folder.color : colors.primary} 
                   />
-                  <Text style={styles.folderName}>
+                  <Text style={[styles.folderName, { color: colors.textPrimary }]}>
                     {typeof resource.folder === 'object' ? resource.folder.name : resource.folder}
                   </Text>
                 </View>
@@ -150,11 +152,11 @@ export default function PreviewResourceModal({ visible, onClose, resource, onEdi
             {/* Tags */}
             {resource.tags && resource.tags.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.label}>Tags</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Tags</Text>
                 <View style={styles.tagsContainer}>
                   {resource.tags.map((tag, index) => {
                     const tagName = typeof tag === 'object' ? tag.name : tag;
-                    const tagColor = typeof tag === 'object' ? tag.color : '#2563EB';
+                    const tagColor = typeof tag === 'object' ? tag.color : colors.primary;
                     return (
                       <View
                         key={index}
@@ -172,17 +174,17 @@ export default function PreviewResourceModal({ visible, onClose, resource, onEdi
 
             {/* Metadata */}
             <View style={styles.section}>
-              <Text style={styles.label}>Details</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Details</Text>
               <View style={styles.metadataRow}>
-                <Icon name="access-time" size={16} color="#9B9A97" />
-                <Text style={styles.metadataText}>
+                <Icon name="access-time" size={16} color={colors.textTertiary} />
+                <Text style={[styles.metadataText, { color: colors.textSecondary }]}>
                   Created {formatDate(resource.createdAt)}
                 </Text>
               </View>
               {resource.updatedAt && resource.updatedAt !== resource.createdAt && (
                 <View style={styles.metadataRow}>
-                  <Icon name="update" size={16} color="#9B9A97" />
-                  <Text style={styles.metadataText}>
+                  <Icon name="update" size={16} color={colors.textTertiary} />
+                  <Text style={[styles.metadataText, { color: colors.textSecondary }]}>
                     Updated {formatDate(resource.updatedAt)}
                   </Text>
                 </View>
@@ -191,17 +193,18 @@ export default function PreviewResourceModal({ visible, onClose, resource, onEdi
           </ScrollView>
 
           {/* Action Buttons */}
-          <View style={styles.actions}>
+          <View style={[styles.actions, { borderTopColor: colors.divider }]}>
             {/* Visit CTA Button */}
             <Pressable
               style={({ pressed }) => [
                 styles.visitButton,
+                { backgroundColor: colors.textPrimary },
                 pressed && styles.visitButtonPressed,
               ]}
               onPress={openUrl}
             >
-              <Icon name="open-in-new" size={20} color="#FFFFFF" />
-              <Text style={styles.visitButtonText}>Visit Website</Text>
+              <Icon name="open-in-new" size={20} color={colors.background} />
+              <Text style={[styles.visitButtonText, { color: colors.background }]}>Visit Website</Text>
             </Pressable>
           </View>
         </Animated.View>
@@ -220,7 +223,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   modalContainer: {
-    backgroundColor: '#fafafa',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 20,
@@ -229,7 +231,6 @@ const styles = StyleSheet.create({
   handleBar: {
     width: 36,
     height: 4,
-    backgroundColor: '#000000ff',
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 10,
@@ -242,7 +243,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
   },
   headerLeft: {
     flex: 1,
@@ -259,7 +259,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '600',
-    color: '#37352F',
     letterSpacing: -0.2,
   },
   closeButton: {
@@ -276,7 +275,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -286,26 +284,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 12,
-    backgroundColor: '#EFF6FF',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
   },
   url: {
     flex: 1,
     fontSize: 14,
-    color: '#2563EB',
     fontWeight: '500',
   },
   description: {
     fontSize: 15,
-    color: '#37352F',
     lineHeight: 22,
-    backgroundColor: '#FFFFFF',
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
   },
   folderBadge: {
     flexDirection: 'row',
@@ -314,14 +306,11 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#FAF5FF',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E9D5FF',
   },
   folderName: {
     fontSize: 14,
-    color: '#9333EA',
     fontWeight: '500',
   },
   tagsContainer: {
@@ -346,13 +335,11 @@ const styles = StyleSheet.create({
   },
   metadataText: {
     fontSize: 14,
-    color: '#787774',
   },
   actions: {
     paddingHorizontal: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#EBEBEA',
   },
   visitButton: {
     flexDirection: 'row',
@@ -360,9 +347,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 16,
-    backgroundColor: '#000000ff',
     borderRadius: 12,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -375,7 +360,6 @@ const styles = StyleSheet.create({
   visitButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
     letterSpacing: -0.1,
   },
 });

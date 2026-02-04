@@ -8,14 +8,15 @@ import {
   Modal,
   Animated,
   ScrollView,
-  Image,
 } from 'react-native';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useTheme } from '../features/theme';
 
 
 export default function EditResourceModal({ visible, onClose, resource, onSave }) {
+  const { colors } = useTheme();
   const { updateResource } = useResources();
   const { folders } = useFolders();
   const [url, setUrl] = useState('');
@@ -26,16 +27,6 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
   const [folderExpanded, setFolderExpanded] = useState(false);
   const [originalData, setOriginalData] = useState({});
   const slideAnim = React.useRef(new Animated.Value(300)).current;
-
-  const getFavicon = (url) => {
-    if (!url) return null;
-    try {
-      const domain = new URL(url).hostname;
-      return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-    } catch {
-      return null;
-    }
-  };
 
   // Update form when resource changes
   useEffect(() => {
@@ -122,25 +113,25 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
         <Animated.View
           style={[
             styles.modalContainer,
-            { transform: [{ translateY: slideAnim }] }
+            { backgroundColor: colors.backgroundTertiary, transform: [{ translateY: slideAnim }] }
           ]}
         >
           {/* Handle bar */}
-          <View style={styles.handleBar} />
+          <View style={[styles.handleBar, { backgroundColor: colors.textPrimary }]} />
 
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Edit Resource</Text>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Edit Resource</Text>
           </View>
 
           {/* Form */}
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {/* URL Section */}
             <View style={styles.section}>
-              <Text style={styles.label}>URL</Text>
-              <View style={styles.urlContainer}>
-                <Icon name="link" size={18} color="#666" />
-                <Text style={styles.urlText} numberOfLines={2}>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>URL</Text>
+              <View style={[styles.urlContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Icon name="link" size={18} color={colors.textSecondary} />
+                <Text style={[styles.urlText, { color: colors.textPrimary }]} numberOfLines={2}>
                   {url}
                 </Text>
               </View>
@@ -148,11 +139,11 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
 
             {/* Title Section */}
             <View style={styles.section}>
-              <Text style={styles.label}>Title</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Title</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.surfaceHover, borderColor: colors.border, color: colors.textPrimary }]}
                 placeholder="Enter a title"
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.textTertiary}
                 value={title}
                 onChangeText={setTitle}
               />
@@ -160,11 +151,11 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
 
             {/* Description Section */}
             <View style={styles.section}>
-              <Text style={styles.label}>Description</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Description</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, { backgroundColor: colors.surfaceHover, borderColor: colors.border, color: colors.textPrimary }]}
                 placeholder="Add a description (optional)"
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.textTertiary}
                 value={description}
                 onChangeText={setDescription}
                 multiline
@@ -175,39 +166,39 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
 
             {/* Folder Section */}
             <View style={styles.section}>
-              <Text style={styles.label}>Folder</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Folder</Text>
               <Pressable 
-                style={styles.folderSelector}
+                style={[styles.folderSelector, { backgroundColor: colors.surfaceHover, borderColor: colors.border }]}
                 onPress={() => setFolderExpanded(!folderExpanded)}
               >
-                <Icon name="folder-open" size={20} color="#666" />
-                <Text style={styles.folderText}>
+                <Icon name="folder-open" size={20} color={colors.textSecondary} />
+                <Text style={[styles.folderText, { color: colors.textPrimary }]}>
                   {folders.find(f => (f._id || f.id) === selectedFolderId)?.name || 'Uncategorised'}
                 </Text>
                 <Icon 
                   name={folderExpanded ? "expand-less" : "expand-more"} 
                   size={20} 
-                  color="#999" 
+                  color={colors.textTertiary} 
                 />
               </Pressable>
               
               {/* Expanded Folder List */}
               {folderExpanded && (
-                <View style={styles.folderList}>
+                <View style={[styles.folderList, { backgroundColor: colors.surfaceHover, borderColor: colors.border }]}>
                   {/* Uncategorised Option */}
                   <Pressable
-                    style={[styles.folderItem, selectedFolderId === null && styles.folderItemSelected]}
+                    style={[styles.folderItem, { borderBottomColor: colors.borderLight }, selectedFolderId === null && [styles.folderItemSelected, { backgroundColor: colors.backgroundTertiary }]]}
                     onPress={() => {
                       setSelectedFolderId(null);
                       setFolderExpanded(false);
                     }}
                   >
-                    <View style={[styles.folderIconContainer, { backgroundColor: '#E5E7EB' }]}>
-                      <Icon name="folder-open" size={16} color="#6B7280" />
+                    <View style={[styles.folderIconContainer, { backgroundColor: colors.backgroundTertiary }]}>
+                      <Icon name="folder-open" size={16} color={colors.textSecondary} />
                     </View>
-                    <Text style={styles.folderItemText}>Uncategorised</Text>
+                    <Text style={[styles.folderItemText, { color: colors.textPrimary }]}>Uncategorised</Text>
                     {selectedFolderId === null && (
-                      <Icon name="check" size={18} color="#2563EB" />
+                      <Icon name="check" size={18} color={colors.primary} />
                     )}
                   </Pressable>
                   
@@ -217,7 +208,7 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
                     return (
                       <Pressable
                         key={folder._id || folder.id}
-                        style={[styles.folderItem, isSelected && styles.folderItemSelected]}
+                        style={[styles.folderItem, { borderBottomColor: colors.borderLight }, isSelected && [styles.folderItemSelected, { backgroundColor: colors.backgroundTertiary }]]}
                         onPress={() => {
                           setSelectedFolderId(folder._id || folder.id);
                           setFolderExpanded(false);
@@ -226,18 +217,18 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
                         <View 
                           style={[
                             styles.folderIconContainer,
-                            { backgroundColor: folder.color ? `${folder.color}15` : '#F3F4F6' }
+                            { backgroundColor: folder.color ? `${folder.color}15` : colors.backgroundTertiary }
                           ]}
                         >
                           <Icon 
                             name={folder.icon || 'folder'} 
                             size={16} 
-                            color={folder.color || '#6B7280'} 
+                            color={folder.color || colors.textSecondary} 
                           />
                         </View>
-                        <Text style={styles.folderItemText}>{folder.name}</Text>
+                        <Text style={[styles.folderItemText, { color: colors.textPrimary }]}>{folder.name}</Text>
                         {isSelected && (
-                          <Icon name="check" size={18} color="#2563EB" />
+                          <Icon name="check" size={18} color={colors.primary} />
                         )}
                       </Pressable>
                     );
@@ -248,15 +239,15 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
 
             {/* Tags Section */}
             <View style={styles.section}>
-              <Text style={styles.label}>Tags</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Tags</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.surfaceHover, borderColor: colors.border, color: colors.textPrimary }]}
                 placeholder="Add tags separated by commas"
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.textTertiary}
                 value={tags}
                 onChangeText={setTags}
               />
-              <Text style={styles.hint}>Example: design, inspiration, ui</Text>
+              <Text style={[styles.hint, { color: colors.textSecondary }]}>Example: design, inspiration, ui</Text>
             </View>
           </ScrollView>
 
@@ -264,13 +255,14 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
           <Pressable
             style={({ pressed }) => [
               styles.saveButton,
-              (!url.trim() || !hasChanges()) && styles.saveButtonDisabled,
+              { backgroundColor: colors.textPrimary },
+              (!url.trim() || !hasChanges()) && [styles.saveButtonDisabled, { backgroundColor: colors.textTertiary }],
               pressed && styles.saveButtonPressed,
             ]}
             onPress={handleSave}
             disabled={!url.trim() || !hasChanges()}
           >
-            <Text style={styles.saveButtonText}>Save Changes</Text>
+            <Text style={[styles.saveButtonText, { color: colors.background }]}>Save Changes</Text>
           </Pressable>
         </Animated.View>
       </View>
@@ -288,7 +280,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   modalContainer: {
-    backgroundColor: '#fafafa',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 20,
@@ -297,7 +288,6 @@ const styles = StyleSheet.create({
   handleBar: {
     width: 36,
     height: 4,
-    backgroundColor: '#000000ff',
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 10,
@@ -310,12 +300,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#37352F',
     letterSpacing: -0.2,
   },
   closeButton: {
@@ -332,7 +320,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -342,30 +329,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 12,
-    backgroundColor: '#F5F5F5',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
   },
   urlText: {
     flex: 1,
     fontSize: 14,
-    color: '#666',
     fontWeight: '500',
   },
   input: {
-    backgroundColor: '#ffffffff',
     borderWidth: 1,
-    borderColor: '#E5E5E5',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#000000ff',
   },
   inputReadOnly: {
-    backgroundColor: '#F5F5F5',
-    color: '#666',
   },
   textArea: {
     minHeight: 100,
@@ -375,9 +354,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#ffffffff',
     borderWidth: 1,
-    borderColor: '#E5E5E5',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -385,13 +362,10 @@ const styles = StyleSheet.create({
   folderText: {
     flex: 1,
     fontSize: 15,
-    color: '#666',
   },
   folderList: {
     marginTop: 8,
-    backgroundColor: '#ffffffff',
     borderWidth: 1,
-    borderColor: '#E5E5E5',
     borderRadius: 12,
     maxHeight: 250,
     overflow: 'hidden',
@@ -403,10 +377,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F4F4F5',
   },
   folderItemSelected: {
-    backgroundColor: '#F0F9FF',
   },
   folderIconContainer: {
     width: 32,
@@ -418,24 +390,20 @@ const styles = StyleSheet.create({
   folderItemText: {
     flex: 1,
     fontSize: 14,
-    color: '#37352F',
     fontWeight: '500',
   },
   hint: {
     fontSize: 12,
-    color: '#999',
     marginTop: 6,
     fontStyle: 'italic',
   },
   saveButton: {
-    backgroundColor: '#000000ff',
     marginHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 22,
     alignItems: 'center',
   },
   saveButtonDisabled: {
-    backgroundColor: '#8d8d8dff',
   },
   saveButtonPressed: {
     opacity: 0.8,
@@ -443,7 +411,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
     letterSpacing: -0.1,
   },
 });

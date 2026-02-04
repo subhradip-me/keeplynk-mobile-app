@@ -3,8 +3,10 @@ import { View, Text, Pressable, StyleSheet, Modal, TouchableOpacity } from 'reac
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../features/auth/authHooks';
+import { useTheme } from '../features/theme';
 
 export default function Header({ onAccountPress, onMorePress }) {
+  const { colors } = useTheme();
   const { user } = useAuth();
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
@@ -26,22 +28,22 @@ export default function Header({ onAccountPress, onMorePress }) {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
       {/* Left side */}
       <View style={styles.leftSection}>
         <Pressable 
           onPress={onAccountPress} 
           style={({ pressed }) => [
             styles.iconButton,
-            pressed && styles.iconButtonPressed
+            pressed && { backgroundColor: colors.hover }
           ]}
         >
           <View style={styles.headerProfileButton}>
-            <View style={styles.headerProfileIcon}>
-              <Text style={styles.headerProfileInitial}>{user?.firstName?.[0] || 'U'}</Text>
+            <View style={[styles.headerProfileIcon, { backgroundColor: colors.backgroundTertiary }]}>
+              <Text style={[styles.headerProfileInitial, { color: colors.textSecondary }]}>{user?.firstName?.[0] || 'U'}</Text>
             </View>
-            <Text style={styles.headerProfileText}>{user?.firstName} {user?.lastName}</Text>
-            <Icon name="keyboard-arrow-down" size={20} color="#7f7f7fff" />
+            <Text style={[styles.headerProfileText, { color: colors.textSecondary }]}>{user?.firstName} {user?.lastName}</Text>
+            <Icon name="keyboard-arrow-down" size={20} color={colors.textSecondary} />
           </View>
         </Pressable>
       </View>
@@ -51,10 +53,10 @@ export default function Header({ onAccountPress, onMorePress }) {
           onPress={handleMorePress} 
           style={({ pressed }) => [
             styles.iconButton,
-            pressed && styles.iconButtonPressed
+            pressed && { backgroundColor: colors.hover }
           ]}
         >
-          <Icon name="more-horiz" size={20} color="#37352F" />
+          <Icon name="more-horiz" size={20} color={colors.textSecondary} />
         </Pressable>
       </View>
 
@@ -71,13 +73,13 @@ export default function Header({ onAccountPress, onMorePress }) {
           onPress={closeModal}
         >
           <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { backgroundColor: colors.backgroundTertiary, borderColor: colors.border }]}>
               {menuItems.map((item, index) => (
                 <Pressable
                   key={index}
                   style={({ pressed }) => [
                     styles.menuItem,
-                    pressed && styles.menuItemPressed,
+                    pressed && { backgroundColor: colors.backgroundSecondary },
                     index === menuItems.length - 1 && styles.menuItemLast
                   ]}
                   onPress={() => {
@@ -85,8 +87,8 @@ export default function Header({ onAccountPress, onMorePress }) {
                     closeModal();
                   }}
                 >
-                  <Icon name={item.icon} size={20} color="#37352F" />
-                  <Text style={styles.menuItemText}>{item.label}</Text>
+                  <Icon name={item.icon} size={20} color={colors.textSecondary} />
+                  <Text style={[styles.menuItemText, { color: colors.textSecondary }]}>{item.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -104,7 +106,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#ffffffff',
     borderBottomWidth: 0,
   },
   leftSection: {
@@ -117,19 +118,16 @@ const styles = StyleSheet.create({
   headerProfileIcon: {
     width: 32,
     height: 32,
-    backgroundColor: '#E0E0E0',
     borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',   
   },
   headerProfileInitial: {
     fontSize: 18,
-    color: '#7f7f7fff',
   },
 
   headerProfileText: {
     fontSize: 15,
-    color: '#7f7f7fff',
     fontWeight: '700',
   },
   headerProfileButton: {
@@ -148,13 +146,9 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 28,
   },
-  iconButtonPressed: {
-    backgroundColor: '#F7F6F3',
-  },
   title: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#37352F',
     letterSpacing: -0.3,
   },
   modalOverlay: {
@@ -167,7 +161,6 @@ const styles = StyleSheet.create({
     right: 16,
   },
   modalContent: {
-    backgroundColor: '#ffffffff',
     borderRadius: 6,
     minWidth: 180,
     overflow: 'hidden',
@@ -177,7 +170,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     borderWidth: 1,
-    borderColor: '#EBEBEA',
   },
   menuItem: {
     flexDirection: 'row',
@@ -191,12 +183,8 @@ const styles = StyleSheet.create({
   menuItemLast: {
     borderBottomWidth: 0,
   },
-  menuItemPressed: {
-    backgroundColor: '#F7F6F3',
-  },
   menuItemText: {
     fontSize: 14,
-    color: '#37352F',
     letterSpacing: -0.1,
   },
 });

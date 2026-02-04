@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useTheme } from '../features/theme';
 
 // Color options
 const COLORS = [
@@ -48,6 +49,7 @@ const ICONS = [
 
 
 export default function NewFolderModal({ visible, onClose, onSave }) {
+  const { colors } = useTheme();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLORS[0].value);
@@ -114,26 +116,26 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
         <Animated.View
           style={[
             styles.modalContainer,
-            { transform: [{ translateY: slideAnim }] }
+            { backgroundColor: colors.backgroundTertiary, transform: [{ translateY: slideAnim }] }
           ]}
         >
           {/* Handle bar */}
-          <View style={styles.handleBar} />
+          <View style={[styles.handleBar, { backgroundColor: colors.textPrimary }]} />
 
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>New Folder</Text>
+          <View style={[styles.header, { borderBottomColor: colors.divider }]}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>New Folder</Text>
           </View>
 
           {/* Form */}
           <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
             {/* Name Input */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Folder Name *</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Folder Name *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.surfaceHover, borderColor: colors.border, color: colors.textPrimary }]}
                 placeholder="Enter folder name"
-                placeholderTextColor="#9B9A97"
+                placeholderTextColor={colors.textTertiary}
                 value={name}
                 onChangeText={setName}
                 autoFocus
@@ -143,11 +145,11 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
 
             {/* Description Input */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Description (Optional)</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Description (Optional)</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, { backgroundColor: colors.surfaceHover, borderColor: colors.border, color: colors.textPrimary }]}
                 placeholder="Add a description"
-                placeholderTextColor="#9B9A97"
+                placeholderTextColor={colors.textTertiary}
                 value={description}
                 onChangeText={setDescription}
                 multiline
@@ -159,14 +161,14 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
 
             {/* Color Picker */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Choose Color</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Choose Color</Text>
               
               {/* Color Preview */}
-              <View style={styles.colorPreview}>
+              <View style={[styles.colorPreview, { backgroundColor: colors.surfaceHover, borderColor: colors.border }]}>
                 <View style={[styles.previewCircle, { backgroundColor: selectedColor }]}>
                   <Icon name={selectedIcon} size={32} color="#FFFFFF" />
                 </View>
-                <Text style={styles.previewText}>Preview</Text>
+                <Text style={[styles.previewText, { color: colors.textSecondary }]}>Preview</Text>
               </View>
 
               <View style={styles.colorGrid}>
@@ -176,7 +178,7 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
                     style={[
                       styles.colorOption,
                       { backgroundColor: color.value },
-                      selectedColor === color.value && styles.colorOptionSelected,
+                      selectedColor === color.value && [styles.colorOptionSelected, { borderColor: colors.surface }],
                     ]}
                     onPress={() => setSelectedColor(color.value)}
                   >
@@ -192,21 +194,22 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
 
             {/* Icon Picker */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Choose Icon</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Choose Icon</Text>
               <View style={styles.iconGrid}>
                 {ICONS.map((icon) => (
                   <Pressable
                     key={icon}
                     style={[
                       styles.iconOption,
-                      selectedIcon === icon && styles.iconOptionSelected,
+                      { backgroundColor: colors.surfaceHover, borderColor: colors.border },
+                      selectedIcon === icon && [styles.iconOptionSelected, { borderColor: colors.textPrimary, backgroundColor: colors.backgroundTertiary }],
                     ]}
                     onPress={() => setSelectedIcon(icon)}
                   >
                     <Icon
                       name={icon}
                       size={24}
-                      color={selectedIcon === icon ? selectedColor : '#666'}
+                      color={selectedIcon === icon ? selectedColor : colors.textSecondary}
                     />
                   </Pressable>
                 ))}
@@ -218,13 +221,14 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
           <Pressable
             style={({ pressed }) => [
               styles.saveButton,
-              (!name.trim() || isSaving) && styles.saveButtonDisabled,
+              { backgroundColor: colors.textPrimary },
+              (!name.trim() || isSaving) && [styles.saveButtonDisabled, { backgroundColor: colors.textTertiary }],
               pressed && styles.saveButtonPressed,
             ]}
             onPress={handleSave}
             disabled={!name.trim() || isSaving}
           >
-            <Text style={styles.saveButtonText}>
+            <Text style={[styles.saveButtonText, { color: colors.surfaceHover }]}>
               {isSaving ? 'Creating...' : 'Create Folder'}
             </Text>
           </Pressable>
@@ -244,7 +248,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   modalContainer: {
-    backgroundColor: '#fafafa',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 20,
@@ -253,7 +256,6 @@ const styles = StyleSheet.create({
   handleBar: {
     width: 36,
     height: 4,
-    backgroundColor: '#000000ff',
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 10,
@@ -266,12 +268,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#37352F',
     letterSpacing: -0.2,
   },
   form: {
@@ -285,18 +285,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#ffffffff',
     borderWidth: 1,
-    borderColor: '#E5E5E5',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#000000ff',
   },
   textArea: {
     minHeight: 80,
@@ -306,10 +302,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
   },
   previewCircle: {
     width: 72,
@@ -317,19 +311,16 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 6,
     borderWidth: 4,
-    borderColor: '#FFFFFF',
   },
   previewText: {
     marginTop: 12,
     fontSize: 12,
     fontWeight: '600',
-    color: '#666',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -345,7 +336,6 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.15,
     shadowRadius: 5,
@@ -355,7 +345,6 @@ const styles = StyleSheet.create({
   },
   colorOptionSelected: {
     borderWidth: 4,
-    borderColor: '#FFFFFF',
     shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 8,
@@ -378,26 +367,20 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E5E5E5',
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconOptionSelected: {
     borderWidth: 2,
-    borderColor: '#000000ff',
-    backgroundColor: '#F7F6F3',
   },
   saveButton: {
-    backgroundColor: '#000000ff',
     marginHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 22,
     alignItems: 'center',
   },
   saveButtonDisabled: {
-    backgroundColor: '#8d8d8dff',
   },
   saveButtonPressed: {
     opacity: 0.8,
@@ -405,7 +388,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
     letterSpacing: -0.1,
   },
 });

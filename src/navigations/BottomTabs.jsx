@@ -6,6 +6,7 @@ import SearchScreen from '../screens/SearchScreen';
 import FoldersStack from './FoldersStack';
 import AddResourceModal from '../modals/AddResourceModal';
 import { useResources } from '../features/resources/resourceHooks';
+import { useTheme } from '../features/theme';
 
 const Tab = createBottomTabNavigator();
 
@@ -31,6 +32,7 @@ const tabBarIcon = (route) => ({ focused, color }) => {
 export default function BottomTabs() {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const { createResource } = useResources();
+  const { colors } = useTheme();
 
   const handleSaveResource = (resource) => {
     createResource({
@@ -47,16 +49,16 @@ export default function BottomTabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: tabBarIcon(route),
-        tabBarActiveTintColor: '#2383E2',
-        tabBarInactiveTintColor: '#9CA3AF',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: '#ffffffff',
+          backgroundColor: colors.surface,
           borderTopWidth: 0,
           height: 92,
           paddingBottom: 20,
           paddingTop: 8,
           elevation: 8,
-          shadowColor: '#000000ff',
+          shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 8,

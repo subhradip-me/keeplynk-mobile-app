@@ -1,11 +1,14 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { useTheme } from '../features/theme';
 
 const TABS = ['All', 'Recent', 'Uncategorised', 'Favourite'];
 
 export default function HomeTabs({ activeTab, onTabChange }) {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.border }]}>
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false}
@@ -24,12 +27,13 @@ export default function HomeTabs({ activeTab, onTabChange }) {
             <Text
               style={[
                 styles.tabText,
+                { color: activeTab === tab ? colors.textDisabled : colors.textSecondary },
                 activeTab === tab && styles.tabTextActive,
               ]}
             >
               {tab}
             </Text>
-            {activeTab === tab && <View style={styles.activeIndicator} />}
+            {activeTab === tab && <View style={[styles.activeIndicator, { backgroundColor: colors.text }]} />}
           </Pressable>
         ))}
       </ScrollView>
@@ -39,9 +43,7 @@ export default function HomeTabs({ activeTab, onTabChange }) {
 
 const styles = StyleSheet.create({
   wrapper: {
-    backgroundColor: '#ffffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
   },
   container: {
     backgroundColor: 'transparent',
@@ -64,11 +66,9 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#9B9A97',
     letterSpacing: -0.2,
   },
   tabTextActive: {
-    color: '#37352F',
     fontWeight: '600',
   },
   activeIndicator: {
@@ -77,7 +77,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 2,
-    backgroundColor: '#37352F',
     borderRadius: 2,
   },
 });

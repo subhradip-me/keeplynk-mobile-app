@@ -1,26 +1,29 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../features/theme';
 
 // Simple EmptyState component
-const EmptyState = ({ icon, title, message }) => (
+const EmptyState = ({ icon, title, message, colors }) => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
     <Text style={{ fontSize: 48, marginBottom: 16 }}>📁</Text>
-    <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }}>{title}</Text>
-    <Text style={{ fontSize: 14, color: '#666', textAlign: 'center' }}>{message}</Text>
+    <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8, textAlign: 'center', color: colors.textPrimary }}>{title}</Text>
+    <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center' }}>{message}</Text>
   </View>
 );
 
 export default function CollectionsScreen() {
+  const { colors } = useTheme();
   return (
-    <View style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Collections</Text>
+    <View style={[styles.safeArea, { backgroundColor: colors.surface }]}>
+      <View style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
+        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Collections</Text>
         </View>
         <EmptyState
           icon="folder-open"
           title="No Collections"
           message="Create collections to organize your links into groups"
+          colors={colors}
         />
       </View>
     </View>
@@ -30,24 +33,19 @@ export default function CollectionsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   container: {
     flex: 1,
-    backgroundColor: '#FBFBFA',
   },
   header: {
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 16,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
   },
   title: {
     fontSize: 30,
     fontWeight: '700',
-    color: '#37352F',
     letterSpacing: -0.5,
   },
 });

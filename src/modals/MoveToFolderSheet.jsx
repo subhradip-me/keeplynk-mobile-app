@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useFolders } from '../features/folders/folderHooks';
+import { useTheme } from '../features/theme';
 
 export default function MoveToFolderSheet({ 
   visible, 
@@ -20,6 +21,7 @@ export default function MoveToFolderSheet({
   currentFolderId,
   resourceTitle 
 }) {
+  const { colors } = useTheme();
   const { folders } = useFolders();
   const [searchQuery, setSearchQuery] = useState('');
   const slideAnim = React.useRef(new Animated.Value(400)).current;
@@ -67,23 +69,23 @@ export default function MoveToFolderSheet({
         <Animated.View
           style={[
             styles.sheet,
-            { transform: [{ translateY: slideAnim }] }
+            { backgroundColor: colors.backgroundTertiary, transform: [{ translateY: slideAnim }] }
           ]}
           onStartShouldSetResponder={() => true}
         >
           {/* Handle */}
-          <View style={styles.handle} />
+          <View style={[styles.handle, { backgroundColor: colors.textPrimary }]} />
 
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Move to Folder</Text>
+          <View style={[styles.header, { borderBottomColor: colors.divider }]}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Move to Folder</Text>
           </View>
 
           {/* Resource Info */}
           {resourceTitle && (
-            <View style={styles.resourceInfo}>
-              <Icon name="link" size={16} color="#787774" />
-              <Text style={styles.resourceTitle} numberOfLines={1}>
+            <View style={[styles.resourceInfo, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Icon name="link" size={16} color={colors.textSecondary} />
+              <Text style={[styles.resourceTitle, { color: colors.textSecondary }]} numberOfLines={1}>
                 {resourceTitle}
               </Text>
             </View>
@@ -91,18 +93,18 @@ export default function MoveToFolderSheet({
 
           {/* Search */}
           {folders.length > 5 && (
-            <View style={styles.searchContainer}>
-              <Icon name="search" size={20} color="#9B9A97" />
+            <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Icon name="search" size={20} color={colors.textTertiary} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.textPrimary }]}
                 placeholder="Search folders..."
-                placeholderTextColor="#9B9A97"
+                placeholderTextColor={colors.textTertiary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
               {searchQuery.length > 0 && (
                 <Pressable onPress={() => setSearchQuery('')}>
-                  <Icon name="cancel" size={18} color="#9B9A97" />
+                  <Icon name="cancel" size={18} color={colors.textTertiary} />
                 </Pressable>
               )}
             </View>
@@ -119,8 +121,8 @@ export default function MoveToFolderSheet({
             {/* Folder List */}
             {filteredFolders.length === 0 ? (
               <View style={styles.emptyState}>
-                <Icon name="folder-off" size={48} color="#C5C4C0" />
-                <Text style={styles.emptyStateText}>
+                <Icon name="folder-off" size={48} color={colors.textDisabled} />
+                <Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>
                   {searchQuery ? 'No folders found' : 'No folders yet'}
                 </Text>
               </View>
@@ -132,7 +134,8 @@ export default function MoveToFolderSheet({
                     key={folder._id || folder.id}
                     style={({ pressed }) => [
                       styles.folderItem,
-                      isActive && styles.folderItemActive,
+                      { backgroundColor: colors.surface, borderColor: colors.border },
+                      isActive && [styles.folderItemActive, { borderColor: colors.primary }],
                       pressed && styles.folderItemPressed,
                     ]}
                     onPress={() => handleMoveToFolder(folder._id || folder.id)}
@@ -141,26 +144,26 @@ export default function MoveToFolderSheet({
                       <View 
                         style={[
                           styles.folderIconContainer, 
-                          { backgroundColor: folder.color ? `${folder.color}15` : '#F3F4F6' }
+                          { backgroundColor: folder.color ? `${folder.color}15` : colors.backgroundTertiary }
                         ]}
                       >
                         <Icon 
                           name={folder.icon || 'folder'} 
                           size={20} 
-                          color={folder.color || '#6B7280'} 
+                          color={folder.color || colors.textSecondary} 
                         />
                       </View>
                       <View style={styles.folderInfo}>
-                        <Text style={styles.folderName}>{folder.name}</Text>
+                        <Text style={[styles.folderName, { color: colors.textPrimary }]}>{folder.name}</Text>
                         {folder.description && (
-                          <Text style={styles.folderDescription} numberOfLines={1}>
+                          <Text style={[styles.folderDescription, { color: colors.textTertiary }]} numberOfLines={1}>
                             {folder.description}
                           </Text>
                         )}
                       </View>
                     </View>
                     {isActive && (
-                      <Icon name="check-circle" size={22} color="#2563EB" />
+                      <Icon name="check-circle" size={22} color={colors.primary} />
                     )}
                   </Pressable>
                 );
@@ -180,7 +183,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#fafafa',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '85%',
@@ -189,7 +191,6 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 4,
-    backgroundColor: '#000000ff',
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 10,
@@ -202,12 +203,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#37352F',
     letterSpacing: -0.2,
   },
   resourceInfo: {
@@ -218,15 +217,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginHorizontal: 20,
     marginTop: 12,
-    backgroundColor: '#ffffffff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
   },
   resourceTitle: {
     flex: 1,
     fontSize: 13,
-    color: '#787774',
     letterSpacing: -0.1,
   },
   searchContainer: {
@@ -238,15 +234,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 16,
     marginBottom: 12,
-    backgroundColor: '#ffffffff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#37352F',
     padding: 0,
   },
   scrollView: {
@@ -258,15 +251,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#ffffffff',
     marginHorizontal: 20,
     marginVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
   },
   folderItemActive: {
-    borderColor: '#2563EB',
     borderWidth: 2,
   },
   folderItemPressed: {
@@ -291,13 +281,11 @@ const styles = StyleSheet.create({
   folderName: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#37352F',
     letterSpacing: -0.2,
     marginBottom: 2,
   },
   folderDescription: {
     fontSize: 12,
-    color: '#9B9A97',
     letterSpacing: -0.1,
   },
   emptyState: {
@@ -308,7 +296,6 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 14,
-    color: '#9B9A97',
     marginTop: 12,
     textAlign: 'center',
   },

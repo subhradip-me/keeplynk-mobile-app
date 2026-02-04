@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable, Switch } from 'react-native';
 import AccountSheet from '../modals/AccountSheet';
 import { Colors, Spacing, BorderRadius, FontSizes, FontWeights, Shadows } from '../constants/theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../features/auth/authHooks';
+import { useTheme } from '../features/theme';
 
 export default function ProfileScreen({ navigation }) {
+  const { colors, isDark, toggle } = useTheme();
   const { user, logout, isAuthenticated } = useAuth();
   const [showAccountSheet, setShowAccountSheet] = useState(false);
 
@@ -32,55 +34,56 @@ export default function ProfileScreen({ navigation }) {
   const avatarInitial = user?.firstName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
+      <View style={[styles.header, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.border }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color="#37352F" />
+          <Icon name="arrow-back" size={24} color={colors.textPrimary} />
         </Pressable>
         <View style={styles.headerContent}>
-          <View style={styles.profileIcon}>
-            <Icon name="person" size={24} color="#2563EB" />
+          <View style={[styles.profileIcon, { backgroundColor: colors.backgroundSecondary }]}>
+            <Icon name="person" size={24} color={colors.primary} />
           </View>
           <View style={styles.headerText}>
-            <Text style={styles.title}>Profile</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Profile</Text>
           </View>
         </View>
       </View>
 
       <ScrollView style={styles.content}>
         {/* User Info Section */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <TouchableOpacity
             style={styles.userCard}
             onPress={() => setShowAccountSheet(true)}
           >
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
+            <View style={[styles.avatar, { backgroundColor: colors.backgroundTertiary, borderColor: colors.divider }]}>
+              <Text style={[styles.avatarText, { color: colors.textPrimary }]}>
                 {avatarInitial}
               </Text>
             </View>
             <View style={styles.userInfo}>
-              <Text style={styles.userName}>
+              <Text style={[styles.userName, { color: colors.textPrimary }]}>
                 {displayName}
               </Text>
-              <Text style={styles.userEmail}>{displayEmail}</Text>
+              <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{displayEmail}</Text>
             </View>
-            <Icon name="chevron-right" size={24} color={Colors.textTertiary} />
+            <Icon name="chevron-right" size={24} color={colors.textTertiary} />
           </TouchableOpacity>
         </View>
 
         {/* Settings Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Preferences</Text>
           <SettingItem
             icon="notifications-none"
             label="Notifications"
             onPress={() => {}}
           />
-          <SettingItem
+          <ThemeToggleItem
             icon="palette"
-            label="Appearance"
-            onPress={() => {}}
+            label="Dark Mode"
+            isDark={isDark}
+            onToggle={toggle}
           />
           <SettingItem
             icon="language"
@@ -91,8 +94,8 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         {/* App Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>About</Text>
           <SettingItem
             icon="info-outline"
             label="About KeepLynk"
@@ -116,17 +119,17 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         {/* Logout Button */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <TouchableOpacity
             style={styles.logoutButton}
             onPress={() => setShowAccountSheet(true)}
           >
-            <Icon name="logout" size={20} color={Colors.error} />
-            <Text style={styles.logoutText}>Log Out</Text>
+            <Icon name="logout" size={20} color={colors.error} />
+            <Text style={[styles.logoutText, { color: colors.error }]}>Log Out</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.version}>Version 1.0.0</Text>
+        <Text style={[styles.version, { color: colors.textTertiary }]}>Version 1.0.0</Text>
       </ScrollView>
 
       <AccountSheet
@@ -141,33 +144,50 @@ export default function ProfileScreen({ navigation }) {
 }
 
 function SettingItem({ icon, label, value, onPress }) {
+  const { colors } = useTheme();
   return (
-    <TouchableOpacity style={styles.settingItem} onPress={onPress}>
+    <TouchableOpacity style={[styles.settingItem, { borderBottomColor: colors.backgroundTertiary }]} onPress={onPress}>
       <View style={styles.settingLeft}>
-        <Icon name={icon} size={22} color={Colors.textSecondary} />
-        <Text style={styles.settingLabel}>{label}</Text>
+        <Icon name={icon} size={22} color={colors.textSecondary} />
+        <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>{label}</Text>
       </View>
       <View style={styles.settingRight}>
-        {value && <Text style={styles.settingValue}>{value}</Text>}
-        <Icon name="chevron-right" size={20} color={Colors.textTertiary} />
+        {value && <Text style={[styles.settingValue, { color: colors.textTertiary }]}>{value}</Text>}
+        <Icon name="chevron-right" size={20} color={colors.textTertiary} />
       </View>
     </TouchableOpacity>
+  );
+}
+
+function ThemeToggleItem({ icon, label, isDark, onToggle }) {
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.settingItem, { borderBottomColor: colors.backgroundTertiary }]}>
+      <View style={styles.settingLeft}>
+        <Icon name={icon} size={22} color={colors.textSecondary} />
+        <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>{label}</Text>
+      </View>
+      <Switch
+        value={isDark}
+        onValueChange={onToggle}
+        trackColor={{ false: colors.border, true: colors.primary }}
+        thumbColor={colors.surface}
+        ios_backgroundColor={colors.border}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.backgroundTertiary,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
     gap: 8,
   },
   backButton: {
@@ -183,7 +203,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 8,
-    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -193,7 +212,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#37352F',
     letterSpacing: -0.3,
   },
   content: {
@@ -201,7 +219,6 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: Spacing.sm,
-    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.sm,
     marginHorizontal: Spacing.md,
     paddingHorizontal: Spacing.lg,
@@ -211,7 +228,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: FontSizes.xs,
     fontWeight: FontWeights.bold,
-    color: Colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: Spacing.md,
@@ -226,17 +242,14 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.backgroundTertiary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.lg,
     borderWidth: 2,
-    borderColor: Colors.divider,
   },
   avatarText: {
     fontSize: FontSizes.xxxl,
     fontWeight: FontWeights.bold,
-    color: Colors.textPrimary,
   },
   userInfo: {
     flex: 1,
@@ -244,13 +257,11 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: FontSizes.lg,
     fontWeight: FontWeights.semibold,
-    color: Colors.textPrimary,
     marginBottom: Spacing.xs,
     letterSpacing: -0.2,
   },
   userEmail: {
     fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
     letterSpacing: -0.1,
   },
   settingItem: {
@@ -259,7 +270,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Spacing.sm + 6,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.backgroundTertiary,
   },
   settingLeft: {
     flexDirection: 'row',
@@ -268,7 +278,6 @@ const styles = StyleSheet.create({
   },
   settingLabel: {
     fontSize: FontSizes.md,
-    color: Colors.textPrimary,
     fontWeight: FontWeights.medium,
   },
   settingRight: {
@@ -278,7 +287,6 @@ const styles = StyleSheet.create({
   },
   settingValue: {
     fontSize: FontSizes.sm,
-    color: Colors.textTertiary,
     fontWeight: FontWeights.medium,
   },
   logoutButton: {
@@ -295,12 +303,10 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: FontSizes.md,
     fontWeight: FontWeights.semibold,
-    color: Colors.error,
     letterSpacing: -0.1,
   },
   version: {
     fontSize: FontSizes.xs,
-    color: Colors.textTertiary,
     textAlign: 'center',
     marginTop: Spacing.xxl,
     marginBottom: Spacing.lg,

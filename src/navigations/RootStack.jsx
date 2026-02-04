@@ -6,21 +6,22 @@ import AuthScreen from '../screens/AuthScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import TrashScreen from '../screens/TrashScreen';
 import { useAuth, useAuthInit } from '../features/auth/authHooks';
-import { Colors } from '../constants/theme';
+import { useTheme } from '../features/theme';
 
 const Stack = createNativeStackNavigator();
 
 export default function RootStack() {
   useAuthInit(); // Initialize auth on app startup
   const { isAuthenticated, loading } = useAuth();
+  const { colors } = useTheme();
 
   console.log('RootStack render:', { isAuthenticated, loading });
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={{ marginTop: 10, color: Colors.textPrimary }}>Loading...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 10, color: colors.textPrimary }}>Loading...</Text>
       </View>
     );
   }
@@ -43,6 +44,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.background,
   },
 });

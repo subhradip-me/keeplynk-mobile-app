@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { useTheme } from '../features/theme';
 // Simple icon component to replace vector icons
 const Icon = ({ name, size = 24, color = '#000' }) => {
   const iconMap = {
@@ -23,22 +24,25 @@ export default function EmptyState({
   actionText, 
   onAction 
 }) {
+  const { colors } = useTheme();
+
   return (
     <View style={styles.container}>
-      <View style={styles.iconContainer}>
-        <Icon name={icon} size={48} color="#9B9A97" />
+      <View style={[styles.iconContainer, { backgroundColor: colors.hover }]}>
+        <Icon name={icon} size={48} color={colors.textSecondary} />
       </View>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.message}>{message}</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+      <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
       {actionText && onAction && (
         <Pressable 
           style={({ pressed }) => [
             styles.actionButton,
+            { backgroundColor: colors.text },
             pressed && styles.actionButtonPressed
           ]}
           onPress={onAction}
         >
-          <Text style={styles.actionText}>{actionText}</Text>
+          <Text style={[styles.actionText, { color: colors.surface }]}>{actionText}</Text>
         </Pressable>
       )}
     </View>
@@ -56,7 +60,6 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 12,
-    backgroundColor: '#F7F6F3',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.xl,
@@ -64,7 +67,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: FontWeights.semibold,
-    color: '#37352F',
     marginTop: Spacing.lg,
     marginBottom: Spacing.sm,
     textAlign: 'center',
@@ -72,13 +74,11 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: FontSizes.md,
-    color: '#787774',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: Spacing.xl,
   },
   actionButton: {
-    backgroundColor: '#37352F',
     paddingHorizontal: Spacing.xxl,
     paddingVertical: Spacing.md,
     borderRadius: 4,

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Modal, Toucha
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch } from 'react-redux';
+import { useTheme } from '../features/theme';
 import LinkItem from '../components/LinkItem';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
@@ -11,6 +12,7 @@ import EditResourceModal from '../modals/EditResourceModal';
 import MoveToFolderSheet from '../modals/MoveToFolderSheet';
 
 export default function SearchScreen() {
+  const { colors } = useTheme();
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -296,15 +298,15 @@ export default function SearchScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
       {/* Search Header */}
-      <View style={styles.searchHeader}>
-        <View style={styles.searchContainer}>
-          <Icon name="search" size={20} color="#9B9A97" style={styles.searchIcon} />
+      <View style={[styles.searchHeader, { backgroundColor: colors.backgroundSecondary }]}>
+        <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
+          <Icon name="search" size={20} color={colors.textTertiary} style={styles.searchIcon} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.textPrimary }]}
             placeholder="Search resources, tags..."
-            placeholderTextColor="#808080ff"
+            placeholderTextColor={colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
@@ -312,7 +314,7 @@ export default function SearchScreen() {
           />
           {searchQuery.length > 0 && (
             <Pressable onPress={() => setSearchQuery('')}>
-              <Icon name="close" size={18} color="#9B9A97" />
+              <Icon name="close" size={18} color={colors.textTertiary} />
             </Pressable>
           )}
         </View>
@@ -320,36 +322,36 @@ export default function SearchScreen() {
           style={styles.filterButton}
           onPress={() => setFilterModalVisible(true)}
         >
-          <Icon name="filter-list" size={20} color="#535353ff" />
+          <Icon name="filter-list" size={20} color={colors.textSecondary} />
         </Pressable>
       </View>
 
       {/* Active Filters Display */}
       {(activeFilters.favoritesOnly || activeFilters.selectedFolder || activeFilters.selectedTag) && (
-        <View style={styles.activeFilters}>
+        <View style={[styles.activeFilters, { borderBottomColor: colors.border }]}>
           {activeFilters.favoritesOnly && (
-            <View style={styles.filterChip}>
-              <Icon name="favorite" size={14} color="#DC2626" />
-              <Text style={styles.filterChipText}>Favorites</Text>
+            <View style={[styles.filterChip, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <Icon name="favorite" size={14} color={colors.error} />
+              <Text style={[styles.filterChipText, { color: colors.textPrimary }]}>Favorites</Text>
             </View>
           )}
           {activeFilters.selectedFolder && (
-            <View style={styles.filterChip}>
-              <Icon name="folder" size={14} color="#2563EB" />
-              <Text style={styles.filterChipText}>
+            <View style={[styles.filterChip, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <Icon name="folder" size={14} color={colors.primary} />
+              <Text style={[styles.filterChipText, { color: colors.textPrimary }]}>
                 {folders.find(f => f._id === activeFilters.selectedFolder)?.name || 'Folder'}
               </Text>
               <Pressable onPress={() => handleFolderPress(null)}>
-                <Icon name="close" size={14} color="#666" />
+                <Icon name="close" size={14} color={colors.textSecondary} />
               </Pressable>
             </View>
           )}
           {activeFilters.selectedTag && (
-            <View style={styles.filterChip}>
-              <Icon name="label" size={14} color="#16A34A" />
-              <Text style={styles.filterChipText}>{activeFilters.selectedTag}</Text>
+            <View style={[styles.filterChip, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <Icon name="label" size={14} color={colors.success} />
+              <Text style={[styles.filterChipText, { color: colors.textPrimary }]}>{activeFilters.selectedTag}</Text>
               <Pressable onPress={clearSearch}>
-                <Icon name="close" size={14} color="#666" />
+                <Icon name="close" size={14} color={colors.textSecondary} />
               </Pressable>
             </View>
           )}
@@ -360,13 +362,13 @@ export default function SearchScreen() {
         {showResults ? (
           // Search Results
           <View style={styles.resultsSection}>
-            <Text style={styles.resultsCount}>
+            <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>
               {filteredResults.length} {filteredResults.length === 1 ? 'result' : 'results'}
             </Text>
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#2563EB" />
-                <Text style={styles.loadingText}>Searching...</Text>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Searching...</Text>
               </View>
             ) : filteredResults.length > 0 ? (
               filteredResults.map((resource) => {
@@ -394,9 +396,9 @@ export default function SearchScreen() {
             ) : null}
             {!loading && filteredResults.length === 0 && (
               <View style={styles.emptyState}>
-                <Icon name="search-off" size={64} color="#C5C4C0" />
-                <Text style={styles.emptyStateTitle}>No results found</Text>
-                <Text style={styles.emptyStateText}>
+                <Icon name="search-off" size={64} color={colors.textDisabled} />
+                <Text style={[styles.emptyStateTitle, { color: colors.textPrimary }]}>No results found</Text>
+                <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
                   Try different keywords or filters
                 </Text>
               </View>
@@ -408,34 +410,35 @@ export default function SearchScreen() {
             {selectionMode === 'folder' ? (
               // Show only folders
               <View style={styles.section}>
-                <View style={styles.selectionHeader}>
+                <View style={[styles.selectionHeader, { borderBottomColor: colors.border }]}>
                   <Pressable onPress={() => setSelectionMode(null)} style={styles.backButton}>
-                    <Icon name="arrow-back" size={24} color="#37352F" />
+                    <Icon name="arrow-back" size={24} color={colors.textPrimary} />
                   </Pressable>
-                  <Text style={styles.selectionHeaderTitle}>Select Folder</Text>
+                  <Text style={[styles.selectionHeaderTitle, { color: colors.textPrimary }]}>Select Folder</Text>
                 </View>
                 {folders.map((folder, index) => (
                   <Pressable
                     key={folder._id || `folder-${index}`}
                     style={[
                       styles.selectionItem,
-                      activeFilters.selectedFolder === folder._id && styles.selectionItemActive,
+                      activeFilters.selectedFolder === folder._id && { backgroundColor: colors.backgroundSecondary },
                     ]}
                     onPress={() => handleFolderPress(folder._id)}
                   >
                     <Icon
                       name="folder"
                       size={20}
-                      color={activeFilters.selectedFolder === folder._id ? '#2563EB' : '#787774'}
+                      color={activeFilters.selectedFolder === folder._id ? colors.primary : colors.textSecondary}
                     />
                     <Text style={[
                       styles.selectionItemText,
-                      activeFilters.selectedFolder === folder._id && styles.selectionItemTextActive,
+                      { color: colors.textPrimary },
+                      activeFilters.selectedFolder === folder._id && { color: colors.primary, fontWeight: '600' },
                     ]}>
                       {folder.name}
                     </Text>
                     {activeFilters.selectedFolder === folder._id && (
-                      <Icon name="check" size={20} color="#2563EB" style={styles.checkIcon} />
+                      <Icon name="check" size={20} color={colors.primary} style={styles.checkIcon} />
                     )}
                   </Pressable>
                 ))}
@@ -443,34 +446,35 @@ export default function SearchScreen() {
             ) : selectionMode === 'tag' ? (
               // Show only tags
               <View style={styles.section}>
-                <View style={styles.selectionHeader}>
+                <View style={[styles.selectionHeader, { borderBottomColor: colors.border }]}>
                   <Pressable onPress={() => setSelectionMode(null)} style={styles.backButton}>
-                    <Icon name="arrow-back" size={24} color="#37352F" />
+                    <Icon name="arrow-back" size={24} color={colors.textPrimary} />
                   </Pressable>
-                  <Text style={styles.selectionHeaderTitle}>Select Tag</Text>
+                  <Text style={[styles.selectionHeaderTitle, { color: colors.textPrimary }]}>Select Tag</Text>
                 </View>
                 <View style={styles.tagSelectionContainer}>
                   {popularTags.map((tag, index) => {
                     const tagName = typeof tag === 'object' ? tag.name : tag;
-                    const tagColor = typeof tag === 'object' ? tag.color : '#2563EB';
+                    const tagColor = typeof tag === 'object' ? tag.color : colors.primary;
                     return (
                       <Pressable
                         key={`tag-select-${tagName}-${index}`}
                         style={[
                           styles.tagSelectionItem,
-                          activeFilters.selectedTag === tagName && styles.tagSelectionItemActive,
+                          activeFilters.selectedTag === tagName && { backgroundColor: colors.backgroundSecondary },
                         ]}
                         onPress={() => handleTagPress(tag)}
                       >
                         <View style={[styles.tagColorDot, { backgroundColor: tagColor }]} />
                         <Text style={[
                           styles.tagSelectionItemText,
-                          activeFilters.selectedTag === tagName && styles.tagSelectionItemTextActive,
+                          { color: colors.textPrimary },
+                          activeFilters.selectedTag === tagName && { color: colors.primary, fontWeight: '600' },
                         ]}>
                           {tagName}
                         </Text>
                         {activeFilters.selectedTag === tagName && (
-                          <Icon name="check" size={18} color="#2563EB" style={styles.checkIcon} />
+                          <Icon name="check" size={18} color={colors.primary} style={styles.checkIcon} />
                         )}
                       </Pressable>
                     );
@@ -483,7 +487,7 @@ export default function SearchScreen() {
                 {/* Recent Resources */}
                 {resources.length > 0 && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Recent Resources</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Recent Resources</Text>
                     {resources.slice(0, 10).map((resource) => {
                       const key = resource._id || resource.id || resource.url;
                       return (
@@ -511,7 +515,7 @@ export default function SearchScreen() {
 
                 {popularTags.length > 0 && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Tags</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Tags</Text>
                     <View style={styles.tagContainer}>
                       {popularTags.map((tag, index) => {
                         const tagName = typeof tag === 'object' ? tag.name : tag;
@@ -520,13 +524,15 @@ export default function SearchScreen() {
                             key={`tag-${tagName}-${index}`}
                             style={[
                               styles.tag,
-                              activeFilters.selectedTag === tagName && styles.tagActive,
+                              { backgroundColor: colors.surfaceHover },
+                              activeFilters.selectedTag === tagName && { backgroundColor: colors.backgroundSecondary, borderColor: colors.primary },
                             ]}
                             onPress={() => handleTagPress(tag)}
                           >
                             <Text style={[
                               styles.tagText,
-                              activeFilters.selectedTag === tagName && styles.tagTextActive,
+                              { color: colors.textPrimary },
+                              activeFilters.selectedTag === tagName && { color: colors.primary, fontWeight: '600' },
                             ]}>
                               {tagName}
                             </Text>
@@ -539,24 +545,25 @@ export default function SearchScreen() {
 
                 {frequentFolders.length > 0 && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Folders</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Folders</Text>
                     {frequentFolders.map((folder, index) => (
                       <Pressable
                         key={folder._id || `folder-${index}`}
                         style={[
                           styles.folderItem,
-                          activeFilters.selectedFolder === folder._id && styles.folderItemActive,
+                          activeFilters.selectedFolder === folder._id && { backgroundColor: colors.backgroundSecondary, borderColor: colors.primary },
                         ]}
                         onPress={() => handleFolderPress(folder._id)}
                       >
                         <Icon
                           name="folder"
                           size={18}
-                          color={activeFilters.selectedFolder === folder._id ? '#2563EB' : '#787774'}
+                          color={activeFilters.selectedFolder === folder._id ? colors.primary : colors.textSecondary}
                         />
                         <Text style={[
                           styles.folderText,
-                          activeFilters.selectedFolder === folder._id && styles.folderTextActive,
+                          { color: colors.textPrimary },
+                          activeFilters.selectedFolder === folder._id && { color: colors.primary, fontWeight: '600' },
                         ]}>
                           {folder.name}
                         </Text>
@@ -583,14 +590,14 @@ export default function SearchScreen() {
           onPress={closeFilterModal}
         >
           <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { backgroundColor: colors.backgroundTertiary, borderColor: colors.border }]}>
               {filterItems.map((item, index) => (
                 <Pressable
                   key={index}
                   style={({ pressed }) => [
                     styles.menuItem,
-                    pressed && styles.menuItemPressed,
-                    item.active && styles.menuItemActive,
+                    pressed && { backgroundColor: colors.surfaceHover },
+                    item.active && { backgroundColor: colors.backgroundSecondary },
                     index === filterItems.length - 1 && styles.menuItemLast
                   ]}
                   onPress={() => {
@@ -601,11 +608,12 @@ export default function SearchScreen() {
                   <Icon
                     name={item.icon}
                     size={20}
-                    color={item.active ? "#2563EB" : "#37352F"}
+                    color={item.active ? colors.primary : colors.textPrimary}
                   />
                   <Text style={[
                     styles.menuItemText,
-                    item.active && styles.menuItemTextActive,
+                    { color: colors.textPrimary },
+                    item.active && { color: colors.primary, fontWeight: '600' },
                   ]}>
                     {item.label}
                   </Text>
@@ -643,14 +651,12 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   searchHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 18,
-    backgroundColor: '#FFFFFF',
     gap: 8,
   },
   searchContainer: {
@@ -658,7 +664,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F7F6F3',
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 28,
@@ -676,7 +681,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: '#37352F',
     padding: 0,
   },
   content: {
@@ -690,7 +694,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#787774',
     marginBottom: 10,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -702,7 +705,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
   },
   filterChip: {
     flexDirection: 'row',
@@ -710,14 +712,11 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#F8F9FA',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
   },
   filterChipText: {
     fontSize: 13,
-    color: '#1A1A1A',
     fontWeight: '500',
   },
   resultsSection: {
@@ -726,7 +725,6 @@ const styles = StyleSheet.create({
   resultsCount: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#787774',
     marginBottom: 12,
     letterSpacing: 0.5,
   },
@@ -738,7 +736,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#787774',
     fontWeight: '500',
   },
   emptyState: {
@@ -749,13 +746,11 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#37352F',
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateText: {
     fontSize: 14,
-    color: '#787774',
     textAlign: 'center',
   },
   tagContainer: {
@@ -766,24 +761,18 @@ const styles = StyleSheet.create({
   tag: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#F7F6F3',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'transparent',
   },
   tagActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#2563EB',
   },
   tagText: {
     fontSize: 14,
-    color: '#37352F',
     fontWeight: '400',
     letterSpacing: -0.1,
   },
   tagTextActive: {
-    color: '#2563EB',
-    fontWeight: '600',
   },
   folderItem: {
     flexDirection: 'row',
@@ -798,18 +787,13 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   folderItemActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#2563EB',
   },
   folderText: {
     fontSize: 15,
-    color: '#37352F',
     letterSpacing: -0.1,
     fontWeight: '400',
   },
   folderTextActive: {
-    color: '#2563EB',
-    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
@@ -820,11 +804,10 @@ const styles = StyleSheet.create({
     right: 16,
   },
   modalContent: {
-    backgroundColor: '#ffffffff',
     borderRadius: 8,
     paddingVertical: 4,
     minWidth: 180,
-    shadowColor: '#000000ff',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -838,22 +821,17 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   menuItemPressed: {
-    backgroundColor: '#F7F6F3',
   },
   menuItemActive: {
-    backgroundColor: '#EFF6FF',
   },
   menuItemLast: {
     borderBottomWidth: 0,
   },
   menuItemText: {
     fontSize: 15,
-    color: '#37352F',
     fontWeight: '400',
   },
   menuItemTextActive: {
-    color: '#2563EB',
-    fontWeight: '600',
   },
   selectionHeader: {
     flexDirection: 'row',
@@ -862,7 +840,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
   },
   backButton: {
     padding: 4,
@@ -870,7 +847,6 @@ const styles = StyleSheet.create({
   selectionHeaderTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#37352F',
   },
   selectionItem: {
     flexDirection: 'row',
@@ -883,17 +859,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   selectionItemActive: {
-    backgroundColor: '#EFF6FF',
   },
   selectionItemText: {
     flex: 1,
     fontSize: 15,
-    color: '#37352F',
     fontWeight: '400',
   },
   selectionItemTextActive: {
-    color: '#2563EB',
-    fontWeight: '600',
   },
   checkIcon: {
     marginLeft: 'auto',
@@ -912,17 +884,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   tagSelectionItemActive: {
-    backgroundColor: '#EFF6FF',
   },
   tagSelectionItemText: {
     flex: 1,
     fontSize: 15,
-    color: '#37352F',
     fontWeight: '400',
   },
   tagSelectionItemTextActive: {
-    color: '#2563EB',
-    fontWeight: '600',
   },
   tagColorDot: {
     width: 12,

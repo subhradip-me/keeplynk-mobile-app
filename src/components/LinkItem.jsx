@@ -1,8 +1,10 @@
 import React, { useState, useRef, memo } from 'react';
 import { View, Text, Pressable, StyleSheet, Image, Modal, TouchableOpacity, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useTheme } from '../features/theme';
 
 const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type = 'bookmark', onPress, onLongPress, onEdit,onMoveToFolder, onDelete, onToggleFavorite, resource }) => {
+  const { colors } = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 100, right: 16 });
   const [faviconError, setFaviconError] = useState(false);
@@ -38,9 +40,10 @@ const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type
         onLongPress={onLongPress}
         style={({ pressed }) => [
           styles.container,
-          pressed && styles.containerPressed
+          { backgroundColor: colors.surface, borderColor: colors.border },
+          pressed && { backgroundColor: colors.hover }
         ]}
-        android_ripple={{ color: '#f1f5f9' }}
+        android_ripple={{ color: colors.hover }}
       >
         {/* Icon/Favicon */}
         <View style={styles.iconContainer}>
@@ -51,22 +54,22 @@ const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type
               onError={() => setFaviconError(true)}
             />
           ) : (
-            <Icon name="language" size={18} color="#787774" />
+            <Icon name="language" size={18} color={colors.textSecondary} />
           )}
         </View>
 
         {/* Content */}
         <View style={styles.content}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>
             {title || 'Untitled'}
           </Text>
           
           {description ? (
-            <Text style={styles.description} numberOfLines={2}>
+            <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={2}>
               {description}
             </Text>
           ) : (
-            <Text style={styles.description} numberOfLines={2}>
+            <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={2}>
               No description available
             </Text>
           )}
@@ -154,7 +157,7 @@ const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type
           style={styles.moreButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Icon name="more-vert" size={18} color="#9B9A97" />
+          <Icon name="more-vert" size={18} color={colors.textSecondary} />
         </Pressable>
       </Pressable>
 
@@ -171,13 +174,13 @@ const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type
           onPress={() => setMenuVisible(false)}
         >
           <View style={[styles.menuContainer, { top: menuPosition.top, right: menuPosition.right }]}>
-            <View style={styles.menuContent}>
+            <View style={[styles.menuContent, { backgroundColor: colors.backgroundTertiary, borderColor: colors.border }]}>
               {menuItems.map((item, index) => (
                 <Pressable
                   key={index}
                   style={({ pressed }) => [
                     styles.menuItem,
-                    pressed && styles.menuItemPressed,
+                    pressed && { backgroundColor: colors.hover },
                     index === menuItems.length - 1 && styles.menuItemLast,
                     index === 0 && styles.menuItemFirst,
                   ]}
@@ -186,11 +189,12 @@ const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type
                   <Icon 
                     name={item.icon} 
                     size={18} 
-                    color={item.danger ? '#EF4444' : '#37352F'} 
+                    color={item.danger ? '#EF4444' : colors.textSecondary} 
                   />
                   <Text 
                     style={[
                       styles.menuItemText,
+                      { color: colors.textSecondary },
                       item.danger && styles.menuItemTextDanger
                     ]}
                   >
@@ -211,15 +215,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     padding: 12,
-    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     marginBottom: 8,
     gap: 12,
     borderWidth: 1,
-    borderColor: '#E4E4E7',
-  },
-  containerPressed: {
-    backgroundColor: '#FAFAFA',
   },
   iconContainer: {
     width: 20,
@@ -240,12 +239,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#18181B',
     letterSpacing: -0.1,
   },
   description: {
     fontSize: 12,
-    color: '#71717A',
     lineHeight: 16,
     marginTop: 2,
   },
@@ -302,11 +299,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   menuContent: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     minWidth: 192,
     borderWidth: 1,
-    borderColor: '#E4E4E7',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
@@ -327,9 +322,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
   },
-  menuItemPressed: {
-    backgroundColor: '#FAFAFA',
-  },
   menuItemLast: {
     borderBottomWidth: 0,
     borderBottomLeftRadius: 8,
@@ -337,7 +329,6 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 14,
-    color: '#18181B',
     fontWeight: '400',
   },
   menuItemTextDanger: {

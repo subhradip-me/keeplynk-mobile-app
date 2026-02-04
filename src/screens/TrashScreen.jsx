@@ -4,21 +4,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useTheme } from '../features/theme';
 import LinkItem from '../components/LinkItem';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
 import { restoreResourceFromTrash, deleteResource, fetchResources } from '../features/resources/resourceThunk';
 
 // Simple EmptyState component for trash
-const EmptyState = ({ icon, title, message }) => (
+const EmptyState = ({ icon, title, message, colors }) => (
   <View style={styles.emptyStateContainer}>
-    <Icon name={icon} size={80} color="#C5C4C0" />
-    <Text style={styles.emptyStateTitle}>{title}</Text>
-    <Text style={styles.emptyStateText}>{message}</Text>
+    <Icon name={icon} size={80} color={colors.textDisabled} />
+    <Text style={[styles.emptyStateTitle, { color: colors.textPrimary }]}>{title}</Text>
+    <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>{message}</Text>
   </View>
 );
 
 export default function TrashScreen() {
+  const { colors } = useTheme();
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const { resources = [] } = useResources();
@@ -161,40 +163,40 @@ export default function TrashScreen() {
   const keyExtractor = useCallback((item) => item._id || item.id || String(item.url), []);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.border }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color="#37352F" />
+          <Icon name="arrow-back" size={24} color={colors.textPrimary} />
         </Pressable>
         <View style={styles.headerContent}>
           <View style={styles.trashIcon}>
-            <Icon name="delete" size={24} color="#EF4444" />
+            <Icon name="delete" size={24} color={colors.error} />
           </View>
           <View style={styles.headerText}>
-            <Text style={styles.title}>Trash</Text>
-            <Text style={styles.itemCount}>{trashedResources.length} items</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Trash</Text>
+            <Text style={[styles.itemCount, { color: colors.textSecondary }]}>{trashedResources.length} items</Text>
           </View>
         </View>
       </View>
 
       {/* Action Bar */}
       {trashedResources.length > 0 && (
-        <View style={styles.actionBar}>
+        <View style={[styles.actionBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
           <Pressable 
-            style={styles.actionBarButton}
+            style={[styles.actionBarButton, { backgroundColor: colors.surfaceHover }]}
             onPress={handleRestoreAll}
           >
-            <Icon name="restore" size={18} color="#2563EB" />
-            <Text style={styles.actionBarButtonText}>Restore All</Text>
+            <Icon name="restore" size={18} color={colors.primary} />
+            <Text style={[styles.actionBarButtonText, { color: colors.primary }]}>Restore All</Text>
           </Pressable>
-          <View style={styles.actionBarDivider} />
+          <View style={[styles.actionBarDivider, { backgroundColor: colors.border }]} />
           <Pressable 
-            style={styles.actionBarButton}
+            style={[styles.actionBarButton, { backgroundColor: colors.surfaceHover }]}
             onPress={handleEmptyTrash}
           >
-            <Icon name="delete-forever" size={18} color="#EF4444" />
-            <Text style={[styles.actionBarButtonText, styles.actionBarButtonTextDanger]}>
+            <Icon name="delete-forever" size={18} color={colors.error} />
+            <Text style={[styles.actionBarButtonText, { color: colors.error }]}>
               Empty Trash
             </Text>
           </Pressable>
@@ -207,6 +209,7 @@ export default function TrashScreen() {
           icon="delete-outline"
           title="Trash is Empty"
           message="Deleted items will appear here for 30 days before being permanently removed"
+          colors={colors}
         />
       ) : (
         <FlatList
@@ -220,9 +223,9 @@ export default function TrashScreen() {
 
       {/* Info Banner */}
       {trashedResources.length > 0 && (
-        <View style={styles.infoBanner}>
-          <Icon name="info-outline" size={16} color="#787774" />
-          <Text style={styles.infoBannerText}>
+        <View style={[styles.infoBanner, { backgroundColor: colors.surfaceHover, borderTopColor: colors.border }]}>
+          <Icon name="info-outline" size={16} color={colors.textSecondary} />
+          <Text style={[styles.infoBannerText, { color: colors.textSecondary }]}>
             Items in trash are automatically deleted after 30 days
           </Text>
         </View>
@@ -234,16 +237,13 @@ export default function TrashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FBFBFA',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
     gap: 8,
   },
   backButton: {
@@ -269,12 +269,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#37352F',
     letterSpacing: -0.3,
   },
   itemCount: {
     fontSize: 13,
-    color: '#787774',
     marginTop: 2,
   },
   actionBar: {
@@ -282,9 +280,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
     gap: 12,
   },
   actionBarButton: {
@@ -296,20 +292,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: '#F7F6F3',
   },
   actionBarButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2563EB',
   },
   actionBarButtonTextDanger: {
-    color: '#EF4444',
   },
   actionBarDivider: {
     width: 1,
     height: 24,
-    backgroundColor: '#EBEBEA',
   },
   list: {
     padding: 12,
@@ -325,14 +317,12 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#37352F',
     marginTop: 20,
     marginBottom: 8,
     textAlign: 'center',
   },
   emptyStateText: {
     fontSize: 14,
-    color: '#787774',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -342,14 +332,11 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#F7F6F3',
     borderTopWidth: 1,
-    borderTopColor: '#EBEBEA',
   },
   infoBannerText: {
     flex: 1,
     fontSize: 12,
-    color: '#787774',
     lineHeight: 16,
   },
 });

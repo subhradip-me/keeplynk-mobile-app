@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useFolders } from '../features/folders/folderHooks';
+import { useTheme } from '../features/theme';
 
 
 export default function AddResourceModal({ visible, onClose, onSave }) {
+  const { colors } = useTheme();
   const { folders } = useFolders();
   const [resourceType, setResourceType] = useState('url');
   const [url, setUrl] = useState('');
@@ -68,41 +70,43 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
         <Animated.View
           style={[
             styles.modalContainer,
-            { transform: [{ translateY: slideAnim }] }
+            { backgroundColor: colors.backgroundTertiary, transform: [{ translateY: slideAnim }] }
           ]}
         >
           {/* Handle bar */}
-          <View style={styles.handleBar} />
+          <View style={[styles.handleBar, { backgroundColor: colors.textPrimary }]} />
 
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Add Resource</Text>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Add Resource</Text>
           </View>
 
           {/* Type Toggle button */}
-          <View style={styles.typeToggle}>
+          <View style={[styles.typeToggle, { backgroundColor: colors.textDisabled }]}>
             <Pressable 
               style={[
                 styles.typeToggleButton, 
-                resourceType === 'url' && styles.typeToggleButtonActive
+                resourceType === 'url' && [styles.typeToggleButtonActive, { backgroundColor: colors.textPrimary }]
               ]}
               onPress={() => setResourceType('url')}
             >
               <Text style={[
                 styles.typeToggleButtonText,
-                resourceType === 'url' && styles.typeToggleButtonTextActive
+                { color: colors.textPrimary },
+                resourceType === 'url' && [styles.typeToggleButtonTextActive, { color: colors.background }]
               ]}>URL</Text>
             </Pressable>
             <Pressable 
               style={[
                 styles.typeToggleButton,
-                resourceType === 'file' && styles.typeToggleButtonActive
+                resourceType === 'file' && [styles.typeToggleButtonActive, { backgroundColor: colors.textPrimary }]
               ]}
               onPress={() => setResourceType('file')}
             >
               <Text style={[
                 styles.typeToggleButtonText,
-                resourceType === 'file' && styles.typeToggleButtonTextActive
+                { color: colors.textPrimary },
+                resourceType === 'file' && [styles.typeToggleButtonTextActive, { color: colors.background }]
               ]}>File</Text>
             </Pressable>
           </View>
@@ -113,11 +117,11 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
               <>
                 {/* URL Input */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>URL *</Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>URL *</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { backgroundColor: colors.surfaceHover, borderColor: colors.border, color: colors.textPrimary }]}
                     placeholder="https://example.com"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={colors.textTertiary}
                     value={url}
                     onChangeText={setUrl}
                     keyboardType="url"
@@ -128,11 +132,11 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
 
                 {/* Title Input */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Title (Optional)</Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>Title (Optional)</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
                     placeholder="Enter a title"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={colors.textTertiary}
                     value={title}
                     onChangeText={setTitle}
                   />
@@ -140,39 +144,39 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
 
                 {/* Folder Selector */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Folder</Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>Folder</Text>
                   <Pressable 
-                    style={styles.folderSelector}
+                    style={[styles.folderSelector, { backgroundColor: colors.background, borderColor: colors.border }]}
                     onPress={() => setFolderExpanded(!folderExpanded)}
                   >
-                    <Icon name="folder-open" size={20} color="#666" />
-                    <Text style={styles.folderText}>
+                    <Icon name="folder-open" size={20} color={colors.textSecondary} />
+                    <Text style={[styles.folderText, { color: colors.textSecondary }]}>
                       {folders.find(f => (f._id || f.id) === selectedFolderId)?.name || 'Uncategorised'}
                     </Text>
                     <Icon 
                       name={folderExpanded ? "expand-less" : "expand-more"} 
                       size={20} 
-                      color="#999" 
+                      color={colors.textTertiary} 
                     />
                   </Pressable>
                   
                   {/* Expanded Folder List */}
                   {folderExpanded && (
-                    <View style={styles.folderList}>
+                    <View style={[styles.folderList, { backgroundColor: colors.background, borderColor: colors.border }]}>
                       {/* Uncategorised Option */}
                       <Pressable
-                        style={[styles.folderItem, selectedFolderId === null && styles.folderItemSelected]}
+                        style={[styles.folderItem, { borderBottomColor: colors.borderLight }, selectedFolderId === null && [styles.folderItemSelected, { backgroundColor: colors.backgroundTertiary }]]}
                         onPress={() => {
                           setSelectedFolderId(null);
                           setFolderExpanded(false);
                         }}
                       >
-                        <View style={[styles.folderIconContainer, { backgroundColor: '#E5E7EB' }]}>
-                          <Icon name="folder-open" size={16} color="#6B7280" />
+                        <View style={[styles.folderIconContainer, { backgroundColor: colors.backgroundTertiary }]}>
+                          <Icon name="folder-open" size={16} color={colors.textSecondary} />
                         </View>
-                        <Text style={styles.folderItemText}>Uncategorised</Text>
+                        <Text style={[styles.folderItemText, { color: colors.textPrimary }]}>Uncategorised</Text>
                         {selectedFolderId === null && (
-                          <Icon name="check" size={18} color="#2563EB" />
+                          <Icon name="check" size={18} color={colors.primary} />
                         )}
                       </Pressable>
                       
@@ -182,7 +186,7 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
                         return (
                           <Pressable
                             key={folder._id || folder.id}
-                            style={[styles.folderItem, isSelected && styles.folderItemSelected]}
+                            style={[styles.folderItem, { borderBottomColor: colors.borderLight }, isSelected && [styles.folderItemSelected, { backgroundColor: colors.backgroundTertiary }]]}
                             onPress={() => {
                               setSelectedFolderId(folder._id || folder.id);
                               setFolderExpanded(false);
@@ -191,18 +195,18 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
                             <View 
                               style={[
                                 styles.folderIconContainer,
-                                { backgroundColor: folder.color ? `${folder.color}15` : '#F3F4F6' }
+                                { backgroundColor: folder.color ? `${folder.color}15` : colors.backgroundTertiary }
                               ]}
                             >
                               <Icon 
                                 name={folder.icon || 'folder'} 
                                 size={16} 
-                                color={folder.color || '#6B7280'} 
+                                color={folder.color || colors.textSecondary} 
                               />
                             </View>
-                            <Text style={styles.folderItemText}>{folder.name}</Text>
+                            <Text style={[styles.folderItemText, { color: colors.textPrimary }]}>{folder.name}</Text>
                             {isSelected && (
-                              <Icon name="check" size={18} color="#2563EB" />
+                              <Icon name="check" size={18} color={colors.primary} />
                             )}
                           </Pressable>
                         );
@@ -215,13 +219,13 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
               <>
                 {/* File Upload Section */}
                 <View style={styles.uploadSection}>
-                  <Pressable style={styles.uploadBox}>
-                    <Icon name="cloud-upload" size={48} color="#999" />
-                    <Text style={styles.uploadTitle}>Upload File</Text>
-                    <Text style={styles.uploadSubtitle}>
+                  <Pressable style={[styles.uploadBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Icon name="cloud-upload" size={48} color={colors.textTertiary} />
+                    <Text style={[styles.uploadTitle, { color: colors.textPrimary }]}>Upload File</Text>
+                    <Text style={[styles.uploadSubtitle, { color: colors.textSecondary }]}>
                       Tap to select files from your device
                     </Text>
-                    <Text style={styles.uploadHint}>
+                    <Text style={[styles.uploadHint, { color: colors.textTertiary }]}>
                       PDF, Images, Documents supported
                     </Text>
                   </Pressable>
@@ -229,11 +233,11 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
 
                 {/* File Name Input (if needed) */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>File Name (Optional)</Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>File Name (Optional)</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
                     placeholder="Enter file name"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={colors.textTertiary}
                     value={title}
                     onChangeText={setTitle}
                   />
@@ -241,39 +245,39 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
 
                 {/* Folder Selector */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Folder</Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>Folder</Text>
                   <Pressable 
-                    style={styles.folderSelector}
+                    style={[styles.folderSelector, { backgroundColor: colors.background, borderColor: colors.border }]}
                     onPress={() => setFolderExpanded(!folderExpanded)}
                   >
-                    <Icon name="folder-open" size={20} color="#666" />
-                    <Text style={styles.folderText}>
+                    <Icon name="folder-open" size={20} color={colors.textSecondary} />
+                    <Text style={[styles.folderText, { color: colors.textSecondary }]}>
                       {folders.find(f => (f._id || f.id) === selectedFolderId)?.name || 'Uncategorised'}
                     </Text>
                     <Icon 
                       name={folderExpanded ? "expand-less" : "expand-more"} 
                       size={20} 
-                      color="#999" 
+                      color={colors.textTertiary} 
                     />
                   </Pressable>
                   
                   {/* Expanded Folder List */}
                   {folderExpanded && (
-                    <View style={styles.folderList}>
+                    <View style={[styles.folderList, { backgroundColor: colors.background, borderColor: colors.border }]}>
                       {/* Uncategorised Option */}
                       <Pressable
-                        style={[styles.folderItem, selectedFolderId === null && styles.folderItemSelected]}
+                        style={[styles.folderItem, { borderBottomColor: colors.borderLight }, selectedFolderId === null && [styles.folderItemSelected, { backgroundColor: colors.backgroundTertiary }]]}
                         onPress={() => {
                           setSelectedFolderId(null);
                           setFolderExpanded(false);
                         }}
                       >
-                        <View style={[styles.folderIconContainer, { backgroundColor: '#E5E7EB' }]}>
-                          <Icon name="folder-open" size={16} color="#6B7280" />
+                        <View style={[styles.folderIconContainer, { backgroundColor: colors.backgroundTertiary }]}>
+                          <Icon name="folder-open" size={16} color={colors.textSecondary} />
                         </View>
-                        <Text style={styles.folderItemText}>Uncategorised</Text>
+                        <Text style={[styles.folderItemText, { color: colors.textPrimary }]}>Uncategorised</Text>
                         {selectedFolderId === null && (
-                          <Icon name="check" size={18} color="#2563EB" />
+                          <Icon name="check" size={18} color={colors.primary} />
                         )}
                       </Pressable>
                       
@@ -283,7 +287,7 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
                         return (
                           <Pressable
                             key={folder._id || folder.id}
-                            style={[styles.folderItem, isSelected && styles.folderItemSelected]}
+                            style={[styles.folderItem, { borderBottomColor: colors.borderLight }, isSelected && [styles.folderItemSelected, { backgroundColor: colors.backgroundTertiary }]]}
                             onPress={() => {
                               setSelectedFolderId(folder._id || folder.id);
                               setFolderExpanded(false);
@@ -292,18 +296,18 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
                             <View 
                               style={[
                                 styles.folderIconContainer,
-                                { backgroundColor: folder.color ? `${folder.color}15` : '#F3F4F6' }
+                                { backgroundColor: folder.color ? `${folder.color}15` : colors.backgroundTertiary }
                               ]}
                             >
                               <Icon 
                                 name={folder.icon || 'folder'} 
                                 size={16} 
-                                color={folder.color || '#6B7280'} 
+                                color={folder.color || colors.textSecondary} 
                               />
                             </View>
-                            <Text style={styles.folderItemText}>{folder.name}</Text>
+                            <Text style={[styles.folderItemText, { color: colors.textPrimary }]}>{folder.name}</Text>
                             {isSelected && (
-                              <Icon name="check" size={18} color="#2563EB" />
+                              <Icon name="check" size={18} color={colors.primary} />
                             )}
                           </Pressable>
                         );
@@ -319,13 +323,14 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
           <Pressable
             style={({ pressed }) => [
               styles.saveButton,
-              (!url.trim()) && styles.saveButtonDisabled,
+              { backgroundColor: colors.textPrimary },
+              (!url.trim()) && [styles.saveButtonDisabled, { backgroundColor: colors.textTertiary }],
               pressed && styles.saveButtonPressed,
             ]}
             onPress={handleSave}
             disabled={!url.trim()}
           >
-            <Text style={styles.saveButtonText}>Save Resource</Text>
+            <Text style={[styles.saveButtonText, { color: colors.background }]}>Save Resource</Text>
           </Pressable>
         </Animated.View>
       </View>
@@ -343,7 +348,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   modalContainer: {
-    backgroundColor: '#fafafa',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 20,
@@ -352,7 +356,6 @@ const styles = StyleSheet.create({
   handleBar: {
     width: 36,
     height: 4,
-    backgroundColor: '#000000ff',
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 10,
@@ -365,12 +368,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#37352F',
     letterSpacing: -0.2,
   },
   closeButton: {
@@ -388,8 +389,6 @@ const styles = StyleSheet.create({
     gap: 0,
     borderRadius: 22,
     padding: 4,
-    backgroundColor: '#ffffffff',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -406,8 +405,6 @@ const styles = StyleSheet.create({
     borderWidth: 0,
   },
   typeToggleButtonActive: {
-    backgroundColor: '#000000ff',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -416,10 +413,8 @@ const styles = StyleSheet.create({
   typeToggleButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#000000ff',
   },
   typeToggleButtonTextActive: {
-    color: '#ffffffff',
     fontWeight: '600',
   },
   form: {
@@ -433,26 +428,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#ffffffff',
     borderWidth: 1,
-    borderColor: '#E5E5E5',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#000000ff',
   },
   folderSelector: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#ffffffff',
     borderWidth: 1,
-    borderColor: '#E5E5E5',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -460,13 +449,10 @@ const styles = StyleSheet.create({
   folderText: {
     flex: 1,
     fontSize: 15,
-    color: '#666',
   },
   folderList: {
     marginTop: 8,
-    backgroundColor: '#ffffffff',
     borderWidth: 1,
-    borderColor: '#E5E5E5',
     borderRadius: 12,
     maxHeight: 250,
     overflow: 'hidden',
@@ -478,10 +464,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F4F4F5',
   },
   folderItemSelected: {
-    backgroundColor: '#F0F9FF',
   },
   folderIconContainer: {
     width: 32,
@@ -493,16 +477,13 @@ const styles = StyleSheet.create({
   folderItemText: {
     flex: 1,
     fontSize: 14,
-    color: '#37352F',
     fontWeight: '500',
   },
   uploadSection: {
     marginBottom: 20,
   },
   uploadBox: {
-    backgroundColor: '#ffffffff',
     borderWidth: 2,
-    borderColor: '#E5E5E5',
     borderStyle: 'dashed',
     borderRadius: 16,
     paddingVertical: 40,
@@ -513,29 +494,24 @@ const styles = StyleSheet.create({
   uploadTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginTop: 12,
   },
   uploadSubtitle: {
     fontSize: 14,
-    color: '#666',
     marginTop: 8,
     textAlign: 'center',
   },
   uploadHint: {
     fontSize: 12,
-    color: '#999',
     marginTop: 4,
   },
   saveButton: {
-    backgroundColor: '#000000ff',
     marginHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 22,
     alignItems: 'center',
   },
   saveButtonDisabled: {
-    backgroundColor: '#8d8d8dff',
   },
   saveButtonPressed: {
     opacity: 0.8,
@@ -543,7 +519,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
     letterSpacing: -0.1,
   },
 });

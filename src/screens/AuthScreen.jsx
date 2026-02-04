@@ -13,9 +13,11 @@ import {
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { register, login } from "../features/auth/authThunk";
+import { useTheme } from "../features/theme";
 
 const AuthScreen = ({ navigation }) => {
   const dispatch = useDispatch();
+  const { colors } = useTheme();
   const [isSignUp, setIsSignUp] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -90,9 +92,9 @@ const AuthScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.safeArea}>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.background }]}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
@@ -100,25 +102,25 @@ const AuthScreen = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.background }]}>
           {/* Title */}
-          <Text style={styles.title}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>
             {isSignUp ? "Create Account" : "Sign in"}
           </Text>
 
           {/* Subtitle */}
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             {isSignUp ? (
               <>
                 Already have an account?{" "}
-                <Text style={styles.link} onPress={toggleAuthMode}>
+                <Text style={[styles.link, { color: colors.textPrimary }]} onPress={toggleAuthMode}>
                   Sign in
                 </Text>
               </>
             ) : (
               <>
                 New user?{" "}
-                <Text style={styles.link} onPress={toggleAuthMode}>
+                <Text style={[styles.link, { color: colors.textPrimary }]} onPress={toggleAuthMode}>
                   Create an account
                 </Text>
               </>
@@ -127,11 +129,11 @@ const AuthScreen = ({ navigation }) => {
 
           {/* Name (Signup only) */}
           {isSignUp && (
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
               <TextInput
                 placeholder="Full Name"
-                placeholderTextColor="#999"
-                style={styles.input}
+                placeholderTextColor={colors.textTertiary}
+                style={[styles.input, { color: colors.textPrimary }]}
                 value={fullName}
                 onChangeText={setFullName}
                 autoCapitalize="words"
@@ -141,11 +143,11 @@ const AuthScreen = ({ navigation }) => {
           )}
 
           {/* Email */}
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
             <TextInput
               placeholder="Email Address"
-              placeholderTextColor="#999"
-              style={styles.input}
+              placeholderTextColor={colors.textTertiary}
+              style={[styles.input, { color: colors.textPrimary }]}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -156,12 +158,12 @@ const AuthScreen = ({ navigation }) => {
           </View>
 
           {/* Password */}
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
             <TextInput
               placeholder="Password"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               secureTextEntry
-              style={styles.input}
+              style={[styles.input, { color: colors.textPrimary }]}
               value={password}
               onChangeText={setPassword}
               autoCapitalize="none"
@@ -171,12 +173,12 @@ const AuthScreen = ({ navigation }) => {
 
           {/* Confirm Password (Signup only) */}
           {isSignUp && (
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
               <TextInput
                 placeholder="Confirm Password"
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.textTertiary}
                 secureTextEntry
-                style={styles.input}
+                style={[styles.input, { color: colors.textPrimary }]}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 autoCapitalize="none"
@@ -188,52 +190,52 @@ const AuthScreen = ({ navigation }) => {
           {/* Forgot password (Signin only) */}
           {!isSignUp && (
             <TouchableOpacity activeOpacity={0.7}>
-              <Text style={styles.forgot}>Forgot password?</Text>
+              <Text style={[styles.forgot, { color: colors.textSecondary }]}>Forgot password?</Text>
             </TouchableOpacity>
           )}
 
           {/* Primary Button */}
           <TouchableOpacity
-            style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
+            style={[styles.primaryButton, { backgroundColor: colors.textPrimary }, loading && styles.primaryButtonDisabled]}
             onPress={handleAuth}
             disabled={loading}
             activeOpacity={0.8}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.background} />
             ) : (
-              <Text style={styles.primaryText}>
+              <Text style={[styles.primaryText, { color: colors.background }]}>
                 {isSignUp ? "Sign Up" : "Login"}
               </Text>
             )}
           </TouchableOpacity>
 
           {/* OR */}
-          <Text style={styles.or}>or</Text>
+          <Text style={[styles.or, { color: colors.textTertiary }]}>or</Text>
 
           {/* Social */}
-          <Text style={styles.socialText}>Continue with Social Media</Text>
+          <Text style={[styles.socialText, { color: colors.textSecondary }]}>Continue with Social Media</Text>
 
           <View style={styles.socialRow}>
-            <TouchableOpacity style={styles.socialIcon} activeOpacity={0.7}>
-              <Text style={styles.socialIconText}>G</Text>
+            <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]} activeOpacity={0.7}>
+              <Text style={[styles.socialIconText, { color: colors.textSecondary }]}>G</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialIcon} activeOpacity={0.7}>
-              <Text style={styles.socialIconText}>f</Text>
+            <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]} activeOpacity={0.7}>
+              <Text style={[styles.socialIconText, { color: colors.textSecondary }]}>f</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialIcon} activeOpacity={0.7}>
-              <Text style={styles.socialIconText}>𝕏</Text>
+            <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]} activeOpacity={0.7}>
+              <Text style={[styles.socialIconText, { color: colors.textSecondary }]}>𝕏</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialIcon} activeOpacity={0.7}>
-              <Text style={styles.socialIconText}>in</Text>
+            <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]} activeOpacity={0.7}>
+              <Text style={[styles.socialIconText, { color: colors.textSecondary }]}>in</Text>
             </TouchableOpacity>
           </View>
 
           {/* Footer */}
-          <Text style={styles.footer}>
+          <Text style={[styles.footer, { color: colors.textSecondary }]}>
             By continuing, you agree to our{" "}
-            <Text style={styles.link}>Terms</Text> &{" "}
-            <Text style={styles.link}>Privacy Policy</Text>
+            <Text style={[styles.link, { color: colors.textPrimary }]}>Terms</Text> &{" "}
+            <Text style={[styles.link, { color: colors.textPrimary }]}>Privacy Policy</Text>
           </Text>
         </View>
       </ScrollView>
@@ -245,11 +247,9 @@ const AuthScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ffffffff",
   },
   container: {
     flex: 1,
-    backgroundColor: "#ffffffff",
   },
   scrollContent: {
     flexGrow: 1,
@@ -258,7 +258,6 @@ const styles = StyleSheet.create({
   },
   card: {
     marginHorizontal: 20,
-    backgroundColor: "#ffffffff",
    // borderRadius: 20,
     padding: 24,
     //elevation: 6,
@@ -271,39 +270,31 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     marginBottom: 8,
-    color: "#000",
   },
   subtitle: {
-    color: "#666",
     marginBottom: 24,
     fontSize: 14,
   },
   link: {
-    color: "#000",
     fontWeight: "600",
     textDecorationLine: "underline",
   },
   inputContainer: {
-    backgroundColor: "#F8F8F8",
     borderRadius: 12,
     marginBottom: 16,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: "#E5E5E5",
   },
   input: {
     height: 52,
     fontSize: 15,
-    color: "#000",
   },
   forgot: {
     alignSelf: "flex-end",
-    color: "#666",
     marginBottom: 20,
     fontSize: 13,
   },
   primaryButton: {
-    backgroundColor: "#000",
     height: 52,
     borderRadius: 26,
     justifyContent: "center",
@@ -319,21 +310,18 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   primaryText: {
-    color: "#fff",
     fontSize: 16,
     fontWeight: "600",
     letterSpacing: 0.5,
   },
   or: {
     textAlign: "center",
-    color: "#999",
     marginVertical: 12,
     fontSize: 13,
   },
   socialText: {
     textAlign: "center",
     fontSize: 12,
-    color: "#666",
     marginBottom: 16,
   },
   socialRow: {
@@ -346,20 +334,16 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#F8F8F8",
     borderWidth: 1,
-    borderColor: "#E5E5E5",
     justifyContent: "center",
     alignItems: "center",
   },
   socialIconText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#666",
   },
   footer: {
     fontSize: 11,
-    color: "#666",
     textAlign: "center",
     lineHeight: 16,
   },

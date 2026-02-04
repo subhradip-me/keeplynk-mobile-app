@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TouchableOpacity 
 import { useNavigation } from '@react-navigation/native';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders';
+import { useTheme } from '../features/theme';
 import { makeResourceFavorite, moveResourceToTrash, fetchResources } from '../features/resources/resourceThunk';
 import { useDispatch } from 'react-redux';
 import LinkItem from '../components/LinkItem';
@@ -13,6 +14,7 @@ import EditFolderModal from '../modals/EditFolderModal';
 import MoveToFolderSheet from '../modals/MoveToFolderSheet';
 
 export default function FolderDetailScreen({ route = { params: { folder: { _id: '1', name: 'Sample Folder' } } } }) {
+  const { colors } = useTheme();
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const { folder: routeFolder } = route.params;
@@ -108,40 +110,40 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.border }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color="#37352F" />
+          <Icon name="arrow-back" size={24} color={colors.textPrimary} />
         </Pressable>
         <View style={styles.headerContent}>
-          <View style={styles.folderIcon}>
-            <Icon name={folder.icon || "folder"} size={24} color={folder.color || '#3B82F6'} />
+          <View style={[styles.folderIcon, { backgroundColor: colors.backgroundTertiary }]}>
+            <Icon name={folder.icon || "folder"} size={24} color={folder.color || colors.primary} />
           </View>
           <View style={styles.headerText}>
-            <Text style={styles.folderName}>{folder.name}</Text>
-            <Text style={styles.itemCount}>{folderResources.length} items</Text>
+            <Text style={[styles.folderName, { color: colors.textPrimary }]}>{folder.name}</Text>
+            <Text style={[styles.itemCount, { color: colors.textSecondary }]}>{folderResources.length} items</Text>
           </View>
         </View>
         <Pressable onPress={() => setModalVisible(true)} style={styles.moreButton}>
-          <Icon name="more-vert" size={24} color="#37352F" />
+          <Icon name="more-vert" size={24} color={colors.textPrimary} />
         </Pressable>
       </View>
 
       {/* Description */}
       {folder.description && (
-        <View style={styles.descriptionContainer}>
-          <Text style={styles.description}>{folder.description}</Text>
-          <Text style={styles.createdDate}>Created {formatDate(folder.createdAt)}</Text>
+        <View style={[styles.descriptionContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <Text style={[styles.description, { color: colors.textPrimary }]}>{folder.description}</Text>
+          <Text style={[styles.createdDate, { color: colors.textTertiary }]}>Created {formatDate(folder.createdAt)}</Text>
         </View>
       )}
 
       {/* Resources List */}
       {folderResources.length === 0 ? (
         <View style={styles.emptyState}>
-          <Icon name="folder-open" size={64} color="#9B9A97" />
-          <Text style={styles.emptyTitle}>No items yet</Text>
-          <Text style={styles.emptyMessage}>Add bookmarks and links to this folder</Text>
+          <Icon name="folder-open" size={64} color={colors.textTertiary} />
+          <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No items yet</Text>
+          <Text style={[styles.emptyMessage, { color: colors.textSecondary }]}>Add bookmarks and links to this folder</Text>
         </View>
       ) : (
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -183,13 +185,13 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
           onPress={closeModal}
         >
           <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { backgroundColor: colors.backgroundTertiary }]}>
               {menuItems.map((item, index) => (
                 <Pressable
                   key={index}
                   style={({ pressed }) => [
                     styles.menuItem,
-                    pressed && styles.menuItemPressed,
+                    pressed && { backgroundColor: colors.surfaceHover },
                     index === menuItems.length - 1 && styles.menuItemLast
                   ]}
                   onPress={() => {
@@ -200,12 +202,13 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
                   <Icon
                     name={item.icon}
                     size={20}
-                    color={item.danger ? '#EF4444' : '#37352F'}
+                    color={item.danger ? colors.error : colors.textPrimary}
                   />
                   <Text
                     style={[
                       styles.menuItemText,
-                      item.danger && styles.menuItemTextDanger
+                      { color: colors.textPrimary },
+                      item.danger && { color: colors.error }
                     ]}
                   >
                     {item.label}
@@ -251,16 +254,13 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FBFBFA',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
     gap: 8,
   },
   backButton: {
@@ -276,7 +276,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 8,
-    backgroundColor: '#F7F6F3',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -286,12 +285,10 @@ const styles = StyleSheet.create({
   folderName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#37352F',
     letterSpacing: -0.3,
   },
   itemCount: {
     fontSize: 13,
-    color: '#787774',
     marginTop: 2,
   },
   moreButton: {
@@ -300,19 +297,15 @@ const styles = StyleSheet.create({
   descriptionContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
   },
   description: {
     fontSize: 14,
-    color: '#37352F',
     lineHeight: 20,
     marginBottom: 6,
   },
   createdDate: {
     fontSize: 12,
-    color: '#9B9A97',
   },
   content: {
     flex: 1,
@@ -331,13 +324,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#37352F',
     marginTop: 16,
     marginBottom: 8,
   },
   emptyMessage: {
     fontSize: 14,
-    color: '#787774',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -350,11 +341,10 @@ const styles = StyleSheet.create({
     right: 16,
   },
   modalContent: {
-    backgroundColor: '#ffffffff',
     borderRadius: 8,
     paddingVertical: 4,
     minWidth: 180,
-    shadowColor: '#000000ff',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -368,17 +358,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   menuItemPressed: {
-    backgroundColor: '#F7F6F3',
   },
   menuItemLast: {
     borderBottomWidth: 0,
   },
   menuItemText: {
     fontSize: 15,
-    color: '#37352F',
     fontWeight: '400',
   },
   menuItemTextDanger: {
-    color: '#EF4444',
   },
 });

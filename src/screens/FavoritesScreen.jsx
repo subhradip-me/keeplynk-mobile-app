@@ -3,19 +3,21 @@ import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { makeResourceFavorite } from '../features/resources/resourceThunk';
 import { useResources } from '../features/resources/resourceHooks';
+import { useTheme } from '../features/theme';
 import LinkItem from '../components/LinkItem';
 import MoveToFolderSheet from '../modals/MoveToFolderSheet';
 
 // Simple EmptyState component
-const EmptyState = ({ icon, title, message }) => (
+const EmptyState = ({ icon, title, message, colors }) => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
     <Text style={{ fontSize: 48, marginBottom: 16 }}>⭐</Text>
-    <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }}>{title}</Text>
-    <Text style={{ fontSize: 14, color: '#666', textAlign: 'center' }}>{message}</Text>
+    <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8, textAlign: 'center', color: colors.textPrimary }}>{title}</Text>
+    <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center' }}>{message}</Text>
   </View>
 );
 
 export default function FavoritesScreen() {
+  const { colors } = useTheme();
   const dispatch = useDispatch();
   const { deleteResource, updateResource } = useResources();
   const { items: resources = [] } = useSelector((state) => state.resources);
@@ -75,16 +77,17 @@ export default function FavoritesScreen() {
   const keyExtractor = useCallback((item) => item._id || item.id || String(item.url), []);
 
   return (
-    <View style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Favorites</Text>
+    <View style={[styles.safeArea, { backgroundColor: colors.surface }]}>
+      <View style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
+        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Favorites</Text>
         </View>
         {favorites.length === 0 ? (
         <EmptyState
           icon="favorite-border"
           title="No Favorites Yet"
           message="Mark links as favorites to quickly access them here"
+          colors={colors}
         />
       ) : (
         <FlatList
@@ -119,24 +122,19 @@ export default function FavoritesScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   container: {
     flex: 1,
-    backgroundColor: '#FBFBFA',
   },
   header: {
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 16,
-    backgroundColor: '#ffffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEA',
   },
   title: {
     fontSize: 30,
     fontWeight: '700',
-    color: '#37352F',
     letterSpacing: -0.5,
   },
   linkList: {
