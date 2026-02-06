@@ -8,6 +8,7 @@ import LinkItem from '../components/LinkItem';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
 import { makeResourceFavorite, moveResourceToTrash, fetchResources } from '../features/resources/resourceThunk';
+import PreviewResourceModal from '../modals/PreviewResourceModal';
 import EditResourceModal from '../modals/EditResourceModal';
 import MoveToFolderSheet from '../modals/MoveToFolderSheet';
 
@@ -22,6 +23,7 @@ export default function SearchScreen() {
     selectedFolder: null,
     selectedTag: null,
   });
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
   const [moveToFolderSheetVisible, setMoveToFolderSheetVisible] = useState(false);
@@ -213,15 +215,31 @@ export default function SearchScreen() {
     });
   };
 
+  const handlePreview = (resource) => {
+    setSelectedResource(resource);
+    setPreviewModalVisible(true);
+  };
+
   const handleEdit = (resource) => {
     setSelectedResource(resource);
     setEditModalVisible(true);
   };
 
   const handleSaveEdit = async (updatedResource) => {
-    console.log('Save edited resource:', updatedResource);
-    setEditModalVisible(false);
-    setSelectedResource(null);
+    try {
+      if (updateResource) {
+        await updateResource(selectedResource._id || selectedResource.id, updatedResource);
+        // Auto-refresh resources after update
+        if (resourcesHook?.fetchResources) {
+          await resourcesHook.fetchResources();
+        }
+      }
+      setEditModalVisible(false);
+      setSelectedResource(null);
+    } catch (error) {
+      console.error('Failed to update resource:', error);
+      throw error;
+    }
   };
 
   const handleToggleFavorite = async (resource) => {
@@ -248,11 +266,16 @@ export default function SearchScreen() {
     try {
       if (updateResource) {
         await updateResource(resourceToMove._id || resourceToMove.id, { folderId });
+        // Auto-refresh resources after moving
+        if (resourcesHook?.fetchResources) {
+          await resourcesHook.fetchResources();
+        }
         setMoveToFolderSheetVisible(false);
         setResourceToMove(null);
       }
     } catch (error) {
       console.error('Failed to move resource:', error);
+      throw error;
     }
   };
 
@@ -383,6 +406,7 @@ export default function SearchScreen() {
                     folder={resource.folder || resource.folderName}
                     isFavorite={resource.isFavorite}
                     type={resource.type}
+                    onPress={() => handlePreview(resource)}
                     onEdit={() => handleEdit(resource)}
                     onMoveToFolder={() => {
                       setResourceToMove(resource);
@@ -500,6 +524,7 @@ export default function SearchScreen() {
                           folder={resource.folder || resource.folderName}
                           isFavorite={resource.isFavorite}
                           type={resource.type}
+                          onPress={() => handlePreview(resource)}
                           onEdit={() => handleEdit(resource)}
                           onMoveToFolder={() => {
                             setResourceToMove(resource);
@@ -623,6 +648,27 @@ export default function SearchScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <PreviewResourceModal
+        visible={previewModalVisible}
+        resource={selectedResource}
+        onClose={() => {
+          setPreviewModalVisible(false);
+          setSelectedResource(null);
+        }}
+        onEdit={() => {
+          setPreviewModalVisible(false);
+          setTimeout(() => handleEdit(selectedResource), 300);
+        }}
+        onDelete={() => {
+          setPreviewModalVisible(false);
+          handleDelete(selectedResource);
+        }}
+        onToggleFavorite={() => {
+          setPreviewModalVisible(false);
+          handleToggleFavorite(selectedResource);
+        }}
+      />
 
       <EditResourceModal
         visible={editModalVisible}

@@ -3,6 +3,7 @@ import authReducer from "../features/auth/authSlice";
 import resourceReducer from "../features/resources/resourceSlice";
 import folderReducer from "../features/folders/folderSlice";
 import themeReducer from "../features/theme/themeSlice";
+import organizeReducer from "../features/organise/organizeSlice";
 
 const store = configureStore({
     reducer: {
@@ -10,6 +11,7 @@ const store = configureStore({
         resources: resourceReducer,
         folders: folderReducer,
         theme: themeReducer,
+        organize: organizeReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({

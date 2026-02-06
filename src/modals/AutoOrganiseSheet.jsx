@@ -17,10 +17,13 @@ export default function AutoOrganiseSheet({
   visible, 
   onClose, 
   onOrganise,
-  selectedCount = 0 
+  selectedCount = 0,
+  totalUncategorised = 0
 }) {
   const { colors } = useTheme();
   const [isOrganising, setIsOrganising] = useState(false);
+  const [result, setResult] = useState(null); // 'success' | 'error' | null
+  const [resultMessage, setResultMessage] = useState('');
   const slideAnim = React.useRef(new Animated.Value(400)).current;
 
   useEffect(() => {
@@ -31,6 +34,9 @@ export default function AutoOrganiseSheet({
         tension: 95,
         friction: 10,
       }).start();
+      // Reset states when modal opens
+      setResult(null);
+      setResultMessage('');
     } else {
       slideAnim.setValue(400);
     }
@@ -38,11 +44,39 @@ export default function AutoOrganiseSheet({
 
   const handleOrganise = async () => {
     setIsOrganising(true);
+    setResult(null);
+    setResultMessage('');
+    
     try {
       await onOrganise?.();
+      setResult('success');
+      setResultMessage('Auto organize started successfully! Your resources are being organized.');
+      
+      // Auto close after 3 seconds on success
+      setTimeout(() => {
+        onClose();
+        // Reset states after closing
+        setTimeout(() => {
+          setResult(null);
+          setResultMessage('');
+        }, 300);
+      }, 3000);
+    } catch (error) {
+      setResult('error');
+      setResultMessage(error?.message || 'Failed to start auto organize. Please try again.');
     } finally {
       setIsOrganising(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!isOrganising) {
       onClose();
+      // Reset states after closing
+      setTimeout(() => {
+        setResult(null);
+        setResultMessage('');
+      }, 300);
     }
   };
 
@@ -56,7 +90,7 @@ export default function AutoOrganiseSheet({
       <TouchableOpacity
         style={styles.overlay}
         activeOpacity={1}
-        onPress={onClose}
+        onPress={handleClose}
       >
         <Animated.View
           style={[
@@ -67,6 +101,29 @@ export default function AutoOrganiseSheet({
         >
           {/* Handle */}
           <View style={[styles.handle, { backgroundColor: colors.textPrimary }]} />
+
+          {/* Result Message */}
+          {result && (
+            <View style={[
+              styles.resultContainer,
+              { 
+                backgroundColor: result === 'success' ? '#10B98120' : '#EF444420',
+                borderColor: result === 'success' ? '#10B981' : '#EF4444'
+              }
+            ]}>
+              <Icon 
+                name={result === 'success' ? 'check-circle' : 'error'} 
+                size={24} 
+                color={result === 'success' ? '#10B981' : '#EF4444'} 
+              />
+              <Text style={[
+                styles.resultMessage,
+                { color: result === 'success' ? '#10B981' : '#EF4444' }
+              ]}>
+                {resultMessage}
+              </Text>
+            </View>
+          )}
 
           {/* Header */}
           <View style={styles.header}>
@@ -93,7 +150,10 @@ export default function AutoOrganiseSheet({
             <View style={styles.infoRow}>
               <Icon name="link" size={20} color={colors.textSecondary} />
               <Text style={[styles.infoText, { color: colors.textPrimary }]}>
-                {selectedCount} {selectedCount === 1 ? 'link' : 'links'} selected
+                {selectedCount > 0 
+                  ? `${selectedCount} ${selectedCount === 1 ? 'link' : 'links'} selected`
+                  : `${totalUncategorised} uncategorised ${totalUncategorised === 1 ? 'link' : 'links'}`
+                }
               </Text>
             </View>
             <View style={styles.infoRow}>
@@ -127,19 +187,34 @@ export default function AutoOrganiseSheet({
           <View style={styles.actions}>
             <Pressable
               onPress={handleOrganise}
-              disabled={isOrganising}
+              disabled={isOrganising || result === 'success'}
               style={({ pressed }) => [
                 pressed && { opacity: 0.8 }
               ]}
             >
               <LinearGradient
-                colors={['#FFD700', '#FDB931', '#E5E4E2']}
+                colors={
+                  result === 'success' 
+                    ? ['#10B981', '#059669'] 
+                    : ['#FFD700', '#FDB931', '#E5E4E2']
+                }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={styles.organiseButton}
+                style={[
+                  styles.organiseButton,
+                  (isOrganising || result) && styles.organiseButtonDisabled
+                ]}
               >
                 {isOrganising ? (
-                  <ActivityIndicator color="#37352F" />
+                  <>
+                    <ActivityIndicator color="#37352F" />
+                    <Text style={styles.organiseButtonText}>Organizing...</Text>
+                  </>
+                ) : result === 'success' ? (
+                  <>
+                    <Icon name="check-circle" size={20} color="#FFFFFF" />
+                    <Text style={[styles.organiseButtonText, { color: '#FFFFFF' }]}>Success!</Text>
+                  </>
                 ) : (
                   <>
                     <Text style={styles.sparkle}>✨</Text>
@@ -150,16 +225,17 @@ export default function AutoOrganiseSheet({
             </Pressable>
 
             <Pressable
-              onPress={onClose}
+              onPress={handleClose}
               disabled={isOrganising}
               style={({ pressed }) => [
                 styles.cancelButton,
                 { backgroundColor: colors.surface },
-                pressed && { opacity: 0.7 }
+                pressed && { opacity: 0.7 },
+                isOrganising && styles.cancelButtonDisabled
               ]}
             >
               <Text style={[styles.cancelButtonText, { color: colors.textPrimary }]}>
-                Cancel
+                {result ? 'Close' : 'Cancel'}
               </Text>
             </Pressable>
           </View>
@@ -205,6 +281,22 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 20,
     opacity: 0.3,
+  },
+  resultContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 24,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+  },
+  resultMessage: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.1,
   },
   header: {
     paddingHorizontal: 24,
@@ -298,6 +390,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
+  organiseButtonDisabled: {
+    opacity: 0.7,
+  },
   sparkle: {
     fontSize: 18,
   },
@@ -312,6 +407,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     alignItems: 'center',
+  },
+  cancelButtonDisabled: {
+    opacity: 0.5,
   },
   cancelButtonText: {
     fontSize: 15,

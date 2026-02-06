@@ -55,6 +55,8 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
   const [selectedColor, setSelectedColor] = useState(COLORS[0].value);
   const [selectedIcon, setSelectedIcon] = useState(ICONS[0]);
   const [isSaving, setIsSaving] = useState(false);
+  const [result, setResult] = useState(null);
+  const [resultMessage, setResultMessage] = useState('');
   const slideAnim = React.useRef(new Animated.Value(300)).current;
 
   React.useEffect(() => {
@@ -65,6 +67,8 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
         tension: 90,
         friction: 9,
       }).start();
+      setResult(null);
+      setResultMessage('');
     } else {
       slideAnim.setValue(300);
       // Reset form when modal is closed
@@ -78,11 +82,14 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Required Field', 'Please enter a folder name');
+      setResult('error');
+      setResultMessage('Please enter a folder name');
       return;
     }
 
     setIsSaving(true);
+    setResult(null);
+    setResultMessage('');
     
     try {
       const folder = {
@@ -93,10 +100,20 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
       };
 
       await onSave?.(folder);
-      // Close modal after successful save
-      onClose();
+      
+      setResult('success');
+      setResultMessage('Folder created successfully!');
+      
+      setTimeout(() => {
+        onClose();
+        setTimeout(() => {
+          setResult(null);
+          setResultMessage('');
+        }, 300);
+      }, 2000);
     } catch (error) {
-      Alert.alert('Error', 'Failed to create folder. Please try again.');
+      setResult('error');
+      setResultMessage(error?.message || 'Failed to create folder. Please try again.');
       console.error('Error creating folder:', error);
     } finally {
       setIsSaving(false);
@@ -121,6 +138,29 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
         >
           {/* Handle bar */}
           <View style={[styles.handleBar, { backgroundColor: colors.textPrimary }]} />
+
+          {/* Result Message */}
+          {result && (
+            <View style={[
+              styles.resultContainer,
+              { 
+                backgroundColor: result === 'success' ? '#10B98120' : '#EF444420',
+                borderColor: result === 'success' ? '#10B981' : '#EF4444'
+              }
+            ]}>
+              <Icon 
+                name={result === 'success' ? 'check-circle' : 'error'} 
+                size={24} 
+                color={result === 'success' ? '#10B981' : '#EF4444'} 
+              />
+              <Text style={[
+                styles.resultMessage,
+                { color: result === 'success' ? '#10B981' : '#EF4444' }
+              ]}>
+                {resultMessage}
+              </Text>
+            </View>
+          )}
 
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.divider }]}>
@@ -221,16 +261,20 @@ export default function NewFolderModal({ visible, onClose, onSave }) {
           <Pressable
             style={({ pressed }) => [
               styles.saveButton,
-              { backgroundColor: colors.textPrimary },
-              (!name.trim() || isSaving) && [styles.saveButtonDisabled, { backgroundColor: colors.textTertiary }],
+              { backgroundColor: result === 'success' ? '#10B981' : colors.textPrimary },
+              (isSaving || !name.trim() || result === 'success') && [styles.saveButtonDisabled, { backgroundColor: result === 'success' ? '#10B981' : colors.textTertiary }],
               pressed && styles.saveButtonPressed,
             ]}
             onPress={handleSave}
-            disabled={!name.trim() || isSaving}
+            disabled={isSaving || !name.trim() || result === 'success'}
           >
-            <Text style={[styles.saveButtonText, { color: colors.surfaceHover }]}>
-              {isSaving ? 'Creating...' : 'Create Folder'}
-            </Text>
+            {isSaving ? (
+              <Text style={[styles.saveButtonText, { color: colors.surfaceHover }]}>Creating...</Text>
+            ) : result === 'success' ? (
+              <Text style={[styles.saveButtonText, { color: '#FFFFFF' }]}>✓ Created</Text>
+            ) : (
+              <Text style={[styles.saveButtonText, { color: colors.surfaceHover }]}>Create Folder</Text>
+            )}
           </Pressable>
         </Animated.View>
       </View>
@@ -260,6 +304,22 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 10,
     marginBottom: 8,
+  },
+  resultContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 20,
+    marginVertical: 12,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+  },
+  resultMessage: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.1,
   },
   header: {
     flexDirection: 'row',

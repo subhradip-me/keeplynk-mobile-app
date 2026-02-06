@@ -26,6 +26,9 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
   const [tags, setTags] = useState('');
   const [folderExpanded, setFolderExpanded] = useState(false);
   const [originalData, setOriginalData] = useState({});
+  const [result, setResult] = useState(null);
+  const [resultMessage, setResultMessage] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(300)).current;
 
   // Update form when resource changes
@@ -62,6 +65,8 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
         tension: 90,
         friction: 10,
       }).start();
+      setResult(null);
+      setResultMessage('');
     } else {
       slideAnim.setValue(300);
     }
@@ -79,9 +84,14 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
 
   const handleSave = async () => {
     if (!url.trim()) {
-      console.log('URL is required');
+      setResult('error');
+      setResultMessage('URL is required');
       return;
     }
+
+    setIsSaving(true);
+    setResult(null);
+    setResultMessage('');
 
     const resourceData = {
       url: url.trim(),
@@ -94,9 +104,23 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
     try {
       await updateResource(resource._id, resourceData);
       onSave?.(resourceData);
-      onClose();
+      
+      setResult('success');
+      setResultMessage('Resource updated successfully!');
+      
+      setTimeout(() => {
+        onClose();
+        setTimeout(() => {
+          setResult(null);
+          setResultMessage('');
+        }, 300);
+      }, 2000);
     } catch (error) {
+      setResult('error');
+      setResultMessage(error?.message || 'Failed to update resource. Please try again.');
       console.error('Failed to update resource:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -123,6 +147,26 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <Text style={[styles.title, { color: colors.textPrimary }]}>Edit Resource</Text>
           </View>
+
+          {/* Result Feedback */}
+          {result && (
+            <View style={[
+              styles.resultContainer,
+              { backgroundColor: result === 'success' ? '#10B98120' : '#EF444420' }
+            ]}>
+              <Icon 
+                name={result === 'success' ? 'check-circle' : 'error'} 
+                size={20} 
+                color={result === 'success' ? '#10B981' : '#EF4444'} 
+              />
+              <Text style={[
+                styles.resultText,
+                { color: result === 'success' ? '#10B981' : '#EF4444' }
+              ]}>
+                {resultMessage}
+              </Text>
+            </View>
+          )}
 
           {/* Form */}
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -184,7 +228,11 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
               
               {/* Expanded Folder List */}
               {folderExpanded && (
-                <View style={[styles.folderList, { backgroundColor: colors.surfaceHover, borderColor: colors.border }]}>
+                <ScrollView 
+                  style={[styles.folderList, { backgroundColor: colors.surfaceHover, borderColor: colors.border }]}
+                  nestedScrollEnabled={true}
+                  showsVerticalScrollIndicator={true}
+                >
                   {/* Uncategorised Option */}
                   <Pressable
                     style={[styles.folderItem, { borderBottomColor: colors.borderLight }, selectedFolderId === null && [styles.folderItemSelected, { backgroundColor: colors.backgroundTertiary }]]}
@@ -233,7 +281,7 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
                       </Pressable>
                     );
                   })}
-                </View>
+                </ScrollView>
               )}
             </View>
 
@@ -255,14 +303,20 @@ export default function EditResourceModal({ visible, onClose, resource, onSave }
           <Pressable
             style={({ pressed }) => [
               styles.saveButton,
-              { backgroundColor: colors.textPrimary },
-              (!url.trim() || !hasChanges()) && [styles.saveButtonDisabled, { backgroundColor: colors.textTertiary }],
+              { backgroundColor: result === 'success' ? '#10B981' : colors.textPrimary },
+              (!url.trim() || !hasChanges() || isSaving) && [styles.saveButtonDisabled, { backgroundColor: colors.textTertiary }],
               pressed && styles.saveButtonPressed,
             ]}
             onPress={handleSave}
-            disabled={!url.trim() || !hasChanges()}
+            disabled={!url.trim() || !hasChanges() || isSaving}
           >
-            <Text style={[styles.saveButtonText, { color: colors.background }]}>Save Changes</Text>
+            {isSaving ? (
+              <Text style={[styles.saveButtonText, { color: colors.background }]}>Saving...</Text>
+            ) : result === 'success' ? (
+              <Text style={[styles.saveButtonText, { color: colors.background }]}>✓ Saved</Text>
+            ) : (
+              <Text style={[styles.saveButtonText, { color: colors.background }]}>Save Changes</Text>
+            )}
           </Pressable>
         </Animated.View>
       </View>
@@ -412,5 +466,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: -0.1,
+  },
+  resultContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 12,
+  },
+  resultText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

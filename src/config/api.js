@@ -42,8 +42,9 @@ export const API_ENDPOINTS = {
   
   // Agent
   AGENT: {
-    ORGANIZE: '/organize',
-    DECIDE: '/agent/decide',
+    //ORGANIZE: '/organize',
+   // DECIDE: '/agent/decide',
+    AUTO_ORGANIZE: '/organise/auto',
   },
 };
 

@@ -171,6 +171,11 @@ class ApiService {
     const response = await apiClient.post(API_ENDPOINTS.AGENT.ORGANIZE, { resourceId, targetFolderId });
     return response.data;
   }
+
+  async autoOrganize(limit = 50) {
+    const response = await apiClient.post(`${API_ENDPOINTS.AGENT.AUTO_ORGANIZE}?limit=${limit}`);
+    return response.data;
+  }
 }
 
 export default new ApiService();

@@ -24,6 +24,9 @@ export default function MoveToFolderSheet({
   const { colors } = useTheme();
   const { folders } = useFolders();
   const [searchQuery, setSearchQuery] = useState('');
+  const [result, setResult] = useState(null);
+  const [resultMessage, setResultMessage] = useState('');
+  const [isMoving, setIsMoving] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(400)).current;
 
   useEffect(() => {
@@ -34,6 +37,8 @@ export default function MoveToFolderSheet({
         tension: 95,
         friction: 10,
       }).start();
+      setResult(null);
+      setResultMessage('');
     } else {
       slideAnim.setValue(400);
     }
@@ -43,10 +48,31 @@ export default function MoveToFolderSheet({
     folder.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleMoveToFolder = (folderId) => {
-    onMove?.(folderId);
-    setSearchQuery('');
-    onClose();
+  const handleMoveToFolder = async (folderId) => {
+    setIsMoving(true);
+    setResult(null);
+    setResultMessage('');
+    
+    try {
+      await onMove?.(folderId);
+      
+      setResult('success');
+      setResultMessage('Resource moved successfully!');
+      
+      setTimeout(() => {
+        setSearchQuery('');
+        onClose();
+        setTimeout(() => {
+          setResult(null);
+          setResultMessage('');
+        }, 300);
+      }, 1500);
+    } catch (error) {
+      setResult('error');
+      setResultMessage(error?.message || 'Failed to move resource. Please try again.');
+    } finally {
+      setIsMoving(false);
+    }
   };
 
   const handleClose = () => {
@@ -75,6 +101,29 @@ export default function MoveToFolderSheet({
         >
           {/* Handle */}
           <View style={[styles.handle, { backgroundColor: colors.textPrimary }]} />
+
+          {/* Result Message */}
+          {result && (
+            <View style={[
+              styles.resultContainer,
+              { 
+                backgroundColor: result === 'success' ? '#10B98120' : '#EF444420',
+                borderColor: result === 'success' ? '#10B981' : '#EF4444'
+              }
+            ]}>
+              <Icon 
+                name={result === 'success' ? 'check-circle' : 'error'} 
+                size={24} 
+                color={result === 'success' ? '#10B981' : '#EF4444'} 
+              />
+              <Text style={[
+                styles.resultMessage,
+                { color: result === 'success' ? '#10B981' : '#EF4444' }
+              ]}>
+                {resultMessage}
+              </Text>
+            </View>
+          )}
 
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.divider }]}>
@@ -137,8 +186,10 @@ export default function MoveToFolderSheet({
                       { backgroundColor: colors.surface, borderColor: colors.border },
                       isActive && [styles.folderItemActive, { borderColor: colors.primary }],
                       pressed && styles.folderItemPressed,
+                      (isMoving || result) && styles.folderItemDisabled,
                     ]}
                     onPress={() => handleMoveToFolder(folder._id || folder.id)}
+                    disabled={isMoving || result === 'success'}
                   >
                     <View style={styles.folderLeft}>
                       <View 
@@ -195,6 +246,22 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 10,
     marginBottom: 8,
+  },
+  resultContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 20,
+    marginVertical: 12,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+  },
+  resultMessage: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.1,
   },
   header: {
     flexDirection: 'row',
@@ -261,6 +328,9 @@ const styles = StyleSheet.create({
   },
   folderItemPressed: {
     opacity: 0.7,
+  },
+  folderItemDisabled: {
+    opacity: 0.5,
   },
   folderLeft: {
     flexDirection: 'row',

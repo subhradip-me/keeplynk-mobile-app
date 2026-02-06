@@ -55,6 +55,8 @@ export default function EditFolderModal({ visible, onClose, onSave, folder }) {
   const [selectedColor, setSelectedColor] = useState(COLORS[0].value);
   const [selectedIcon, setSelectedIcon] = useState(ICONS[0]);
   const [isSaving, setIsSaving] = useState(false);
+  const [result, setResult] = useState(null);
+  const [resultMessage, setResultMessage] = useState('');
   const slideAnim = React.useRef(new Animated.Value(300)).current;
 
   // Initialize form with folder data when modal opens
@@ -75,6 +77,8 @@ export default function EditFolderModal({ visible, onClose, onSave, folder }) {
         tension: 90,
         friction: 9,
       }).start();
+      setResult(null);
+      setResultMessage('');
     } else {
       slideAnim.setValue(300);
       // Reset form when modal is closed
@@ -88,11 +92,14 @@ export default function EditFolderModal({ visible, onClose, onSave, folder }) {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Required Field', 'Please enter a folder name');
+      setResult('error');
+      setResultMessage('Please enter a folder name');
       return;
     }
 
     setIsSaving(true);
+    setResult(null);
+    setResultMessage('');
     
     try {
       const updatedFolder = {
@@ -103,10 +110,20 @@ export default function EditFolderModal({ visible, onClose, onSave, folder }) {
       };
 
       await onSave?.(updatedFolder);
-      // Close modal after successful save
-      onClose();
+      
+      setResult('success');
+      setResultMessage('Folder updated successfully!');
+      
+      setTimeout(() => {
+        onClose();
+        setTimeout(() => {
+          setResult(null);
+          setResultMessage('');
+        }, 300);
+      }, 2000);
     } catch (error) {
-      Alert.alert('Error', 'Failed to update folder. Please try again.');
+      setResult('error');
+      setResultMessage(error?.message || 'Failed to update folder. Please try again.');
       console.error('Error updating folder:', error);
     } finally {
       setIsSaving(false);
@@ -131,6 +148,29 @@ export default function EditFolderModal({ visible, onClose, onSave, folder }) {
         >
           {/* Handle bar */}
           <View style={[styles.handleBar, { backgroundColor: colors.textPrimary }]} />
+
+          {/* Result Message */}
+          {result && (
+            <View style={[
+              styles.resultContainer,
+              { 
+                backgroundColor: result === 'success' ? '#10B98120' : '#EF444420',
+                borderColor: result === 'success' ? '#10B981' : '#EF4444'
+              }
+            ]}>
+              <Icon 
+                name={result === 'success' ? 'check-circle' : 'error'} 
+                size={24} 
+                color={result === 'success' ? '#10B981' : '#EF4444'} 
+              />
+              <Text style={[
+                styles.resultMessage,
+                { color: result === 'success' ? '#10B981' : '#EF4444' }
+              ]}>
+                {resultMessage}
+              </Text>
+            </View>
+          )}
 
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.divider }]}>
@@ -231,16 +271,20 @@ export default function EditFolderModal({ visible, onClose, onSave, folder }) {
           <Pressable
             style={({ pressed }) => [
               styles.saveButton,
-              { backgroundColor: colors.textPrimary },
-              (!name.trim() || isSaving) && [styles.saveButtonDisabled, { backgroundColor: colors.textTertiary }],
+              { backgroundColor: result === 'success' ? '#10B981' : colors.textPrimary },
+              (isSaving || !name.trim() || result === 'success') && [styles.saveButtonDisabled, { backgroundColor: result === 'success' ? '#10B981' : colors.textTertiary }],
               pressed && styles.saveButtonPressed,
             ]}
             onPress={handleSave}
-            disabled={!name.trim() || isSaving}
+            disabled={isSaving || !name.trim() || result === 'success'}
           >
-            <Text style={[styles.saveButtonText, { color: colors.background }]}>
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </Text>
+            {isSaving ? (
+              <Text style={[styles.saveButtonText, { color: colors.background }]}>Saving...</Text>
+            ) : result === 'success' ? (
+              <Text style={[styles.saveButtonText, { color: '#FFFFFF' }]}>✓ Saved</Text>
+            ) : (
+              <Text style={[styles.saveButtonText, { color: colors.background }]}>Save Changes</Text>
+            )}
           </Pressable>
         </Animated.View>
       </View>
@@ -270,6 +314,22 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 10,
     marginBottom: 8,
+  },
+  resultContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 20,
+    marginVertical: 12,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+  },
+  resultMessage: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.1,
   },
   header: {
     flexDirection: 'row',

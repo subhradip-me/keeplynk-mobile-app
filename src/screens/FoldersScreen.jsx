@@ -41,11 +41,14 @@ export default function FoldersScreen() {
         icon: folder.icon,
         isPrivate: false,
       });
+      // Auto-refresh folders after creation
+      await fetchFolders();
       setNewFolderModalVisible(false);
     } catch (error) {
       console.error('Failed to create folder:', error);
+      throw error;
     }
-  }, [createFolder]);
+  }, [createFolder, fetchFolders]);
 
   const handleFolderPress = useCallback((folder) => {
     navigation.navigate('FolderDetail', { folder });

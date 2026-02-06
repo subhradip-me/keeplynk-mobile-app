@@ -9,6 +9,7 @@ import { useDispatch } from 'react-redux';
 import LinkItem from '../components/LinkItem';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import PreviewResourceModal from '../modals/PreviewResourceModal';
 import EditResourceModal from '../modals/EditResourceModal';
 import EditFolderModal from '../modals/EditFolderModal';
 import MoveToFolderSheet from '../modals/MoveToFolderSheet';
@@ -26,8 +27,9 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
 
   // Get resources by folder (excluding trashed)
   const folderResources = resources.filter(r => r.folderId === folder._id && !r.isTrashed);
-  
+
   const [modalVisible, setModalVisible] = useState(false);
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
   const [moveToFolderSheetVisible, setMoveToFolderSheetVisible] = useState(false);
@@ -42,10 +44,13 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
   const handleSaveEdit = async (updatedResource) => {
     try {
       await updateResource(selectedResource._id, updatedResource);
+      // Auto-refresh resources after update
+      await dispatch(fetchResources());
       setEditModalVisible(false);
       setSelectedResource(null);
     } catch (error) {
       console.error('Failed to update resource:', error);
+      throw error;
     }
   };
 
@@ -69,13 +74,16 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
 
   const handleMoveToFolder = async (folderId) => {
     if (!resourceToMove) return;
-    
+
     try {
       await updateResource(resourceToMove._id, { folderId });
+      // Auto-refresh resources after moving
+      await dispatch(fetchResources());
       setMoveToFolderSheetVisible(false);
       setResourceToMove(null);
     } catch (error) {
       console.error('Failed to move resource:', error);
+      throw error;
     }
   };
 
@@ -158,7 +166,7 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
                 folder={resource.folderName}
                 isFavorite={resource.isFavorite}
                 type={resource.type}
-                onPress={() => handleLinkPress(resource)}
+                onPress={() => setSelectedResource(resource) || setPreviewModalVisible(true)}
                 onEdit={() => handleEdit(resource)}
                 onMoveToFolder={() => {
                   setResourceToMove(resource);
@@ -219,6 +227,27 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <PreviewResourceModal
+        visible={previewModalVisible}
+        resource={selectedResource}
+        onClose={() => {
+          setPreviewModalVisible(false);
+          setSelectedResource(null);
+        }}
+        onEdit={() => {
+          setPreviewModalVisible(false);
+          setTimeout(() => handleEdit(selectedResource), 300);
+        }}
+        onDelete={() => {
+          setPreviewModalVisible(false);
+          handleDelete(selectedResource);
+        }}
+        onToggleFavorite={() => {
+          setPreviewModalVisible(false);
+          handleToggleFavorite(selectedResource);
+        }}
+      />
 
       <EditResourceModal
         visible={editModalVisible}

@@ -25,6 +25,10 @@ export const organizeAPI = {
     );
     return response;
   },
+  autoOrganize: async (limit = 50) => {
+    const response = await apiService.autoOrganize(limit);
+    return response;
+  },
 };
 
 export default organizeAPI;

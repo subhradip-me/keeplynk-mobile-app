@@ -13,6 +13,7 @@ import AutoOrganiseSheet from '../modals/AutoOrganiseSheet';
 import { useAuth } from '../features/auth/authHooks';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
+import { useAutoOrganize, useAutoOrganizing } from '../features/organise';
 import { makeResourceFavorite, moveResourceToTrash, fetchResources as fetchResourcesThunk } from '../features/resources/resourceThunk';
 import { useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,6 +25,8 @@ export default function HomeScreen() {
   const { resources, fetchResources, updateResource } = useResources();
   const { folders, fetchFolders } = useFolders();
   const { colors } = useTheme();
+  const autoOrganize = useAutoOrganize();
+  const isAutoOrganizing = useAutoOrganizing();
   const [activeTab, setActiveTab] = useState('All');
   const [accountSheetVisible, setAccountSheetVisible] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -81,12 +84,20 @@ export default function HomeScreen() {
     setEditModalVisible(true);
   }, []);
 
-  const handleSaveEdit = useCallback((updatedResource) => {
-    console.log('Save edited resource:', updatedResource);
-    // TODO: Dispatch update action
-    setEditModalVisible(false);
-    setSelectedResource(null);
-  }, []);
+  const handleSaveEdit = useCallback(async (updatedResource) => {
+    try {
+      if (selectedResource) {
+        await updateResource(selectedResource._id, updatedResource);
+        // Auto-refresh resources after update
+        await fetchResources();
+      }
+      setEditModalVisible(false);
+      setSelectedResource(null);
+    } catch (error) {
+      console.error('Failed to update resource:', error);
+      throw error;
+    }
+  }, [selectedResource, updateResource, fetchResources]);
 
   const handlePreview = useCallback((resource) => {
     setPreviewResource(resource);
@@ -116,18 +127,39 @@ export default function HomeScreen() {
     
     try {
       await updateResource(resourceToMove._id, { folderId });
+      // Auto-refresh resources after moving
+      await fetchResources();
       setMoveToFolderSheetVisible(false);
       setResourceToMove(null);
     } catch (error) {
       console.error('Failed to move resource:', error);
+      throw error;
     }
-  }, [resourceToMove, updateResource]);
+  }, [resourceToMove, updateResource, fetchResources]);
 
   const handleAutoOrganise = useCallback(async () => {
-    console.log('Auto organising selected items:', selectedItems);
-    // TODO: Implement AI auto-organisation logic
-    // This will send selectedItems to AI service for categorization
-  }, [selectedItems]);
+    try {
+      // Call the auto-organize API with a limit of 50 resources
+      const result = await autoOrganize(50).unwrap();
+      
+      console.log('Auto organize started:', result);
+      
+      // Refetch resources immediately and then again after a delay
+      await fetchResources();
+      await fetchFolders();
+      
+      // Additional refresh after backend processing
+      setTimeout(async () => {
+        await fetchResources();
+        await fetchFolders();
+      }, 3000);
+      
+      exitSelectionMode();
+    } catch (error) {
+      console.error('Failed to auto organize:', error);
+      throw error;
+    }
+  }, [autoOrganize, fetchResources, fetchFolders, exitSelectionMode]);
 
   // const handleDeleteSelected = useCallback(() => {
   //   console.log('Delete selected:', selectedItems);
@@ -156,7 +188,10 @@ export default function HomeScreen() {
     let filtered;
     switch (activeTab) {
       case 'All':
-        filtered = activeResources;
+        // Sort by newest first for 'All' tab
+        filtered = [...activeResources].sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
         break;
       
       case 'Recent':
@@ -166,17 +201,23 @@ export default function HomeScreen() {
         break;
       
       case 'Uncategorised':
-        filtered = activeResources.filter(
-          resource => !resource.folderId || resource.tags.length === 0
-        );
+        // Sort uncategorised by newest first too
+        filtered = activeResources
+          .filter(resource => !resource.folderId || resource.tags.length === 0)
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         break;
       
       case 'Favourite':
-        filtered = activeResources.filter(resource => resource.isFavorite);
+        // Sort favorites by newest first
+        filtered = activeResources
+          .filter(resource => resource.isFavorite)
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         break;
       
       default:
-        filtered = activeResources;
+        filtered = [...activeResources].sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
     }
     
     return filtered;
@@ -345,6 +386,9 @@ export default function HomeScreen() {
         onClose={() => setAutoOrganiseSheetVisible(false)}
         onOrganise={handleAutoOrganise}
         selectedCount={selectedItems.length}
+        totalUncategorised={filteredResources.filter(r => 
+          !r.folderId || r.tags.length === 0
+        ).length}
       />
     </SafeAreaView>
   );
