@@ -28,7 +28,9 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
   const [result, setResult] = useState(null);
   const [resultMessage, setResultMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(300)).current;
+  const popupAnim = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
     if (visible) {
@@ -44,6 +46,25 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
       slideAnim.setValue(300);
     }
   }, [visible, slideAnim]);
+
+  React.useEffect(() => {
+    if (showComingSoonPopup) {
+      Animated.sequence([
+        Animated.spring(popupAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8,
+        }),
+        Animated.delay(2500),
+        Animated.timing(popupAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => setShowComingSoonPopup(false));
+    }
+  }, [showComingSoonPopup, popupAnim]);
   const handleFilePicker = async () => {
     try {
       const result = await DocumentPicker.pick({
@@ -123,6 +144,51 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
     }
   };
 
+  const renderComingSoonPopup = () => {
+    if (!showComingSoonPopup) return null;
+
+    return (
+      <Animated.View
+        style={[
+          styles.comingSoonPopup,
+          {
+            backgroundColor: colors.primary,
+            opacity: popupAnim,
+            transform: [
+              {
+                translateY: popupAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [-20, 0],
+                }),
+              },
+              {
+                scale: popupAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.8, 1],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <Icon name="info" size={22} color="#FFFFFF" />
+        <View style={styles.popupTextContainer}>
+          <Text style={styles.popupTitle}>Coming Soon!</Text>
+          <Text style={styles.popupMessage}>
+            Document upload feature is under development
+          </Text>
+        </View>
+        <Pressable 
+          onPress={() => setShowComingSoonPopup(false)}
+          style={styles.popupCloseButton}
+          hitSlop={8}
+        >
+          <Icon name="close" size={20} color="#FFFFFF" />
+        </Pressable>
+      </Animated.View>
+    );
+  };
+
   return (
     <Modal
       visible={visible}
@@ -141,6 +207,9 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
         >
           {/* Handle bar */}
           <View style={[styles.handleBar, { backgroundColor: colors.textPrimary }]} />
+
+          {/* Coming Soon Popup */}
+          {renderComingSoonPopup()}
 
           {/* Result Message */}
           {result && (
@@ -188,15 +257,18 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
             <Pressable 
               style={[
                 styles.typeToggleButton,
-                resourceType === 'file' && [styles.typeToggleButtonActive, { backgroundColor: colors.textPrimary }]
+                resourceType === 'file' && [styles.typeToggleButtonActive, { backgroundColor: colors.textPrimary }],
+                { opacity: 0.5 }
               ]}
-              onPress={() => setResourceType('file')}
+              onPress={() => setShowComingSoonPopup(true)}
             >
-              <Text style={[
-                styles.typeToggleButtonText,
-                { color: colors.textPrimary },
-                resourceType === 'file' && [styles.typeToggleButtonTextActive, { color: colors.background }]
-              ]}>Document</Text>
+              <View style={styles.toggleButtonContent}>
+                <Text style={[
+                  styles.typeToggleButtonText,
+                  { color: colors.textPrimary },
+                  resourceType === 'file' && [styles.typeToggleButtonTextActive, { color: colors.background }]
+                ]}>Document</Text>
+              </View>
             </Pressable>
           </View>
 
@@ -223,7 +295,7 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
             <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: colors.textPrimary }]}>Title (Optional)</Text>
               <TextInput
-                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
+                style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.textPrimary }]}
                 placeholder="Enter a title"
                 placeholderTextColor={colors.textTertiary}
                 value={title}
@@ -235,7 +307,7 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
             <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: colors.textPrimary }]}>Folder</Text>
               <Pressable 
-                style={[styles.folderSelector, { backgroundColor: colors.background, borderColor: colors.border }]}
+                style={[styles.folderSelector, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
                 onPress={() => setFolderExpanded(!folderExpanded)}
               >
                 <Icon name="folder-open" size={20} color={colors.textSecondary} />
@@ -252,26 +324,10 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
               {/* Expanded Folder List */}
               {folderExpanded && (
                 <ScrollView 
-                  style={[styles.folderList, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  style={[styles.folderList, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
                   nestedScrollEnabled={true}
                   showsVerticalScrollIndicator={true}
                 >
-                  {/* Uncategorised Option */}
-                  <Pressable
-                    style={[styles.folderItem, { borderBottomColor: colors.borderLight }, selectedFolderId === null && [styles.folderItemSelected, { backgroundColor: colors.backgroundTertiary }]]}
-                    onPress={() => {
-                      setSelectedFolderId(null);
-                      setFolderExpanded(false);
-                    }}
-                  >
-                    <View style={[styles.folderIconContainer, { backgroundColor: colors.backgroundTertiary }]}>
-                      <Icon name="folder-open" size={16} color={colors.textSecondary} />
-                    </View>
-                    <Text style={[styles.folderItemText, { color: colors.textPrimary }]}>Uncategorised</Text>
-                    {selectedFolderId === null && (
-                      <Icon name="check" size={18} color={colors.primary} />
-                    )}
-                  </Pressable>
                   
                   {/* Folder Items */}
                   {folders.map((folder) => {
@@ -288,7 +344,7 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
                         <View 
                           style={[
                             styles.folderIconContainer,
-                            { backgroundColor: folder.color ? `${folder.color}15` : colors.backgroundTertiary }
+                            { backgroundColor: folder.color ? `${folder.color}15` : colors.backgroundSecondary }
                           ]}
                         >
                           <Icon 
@@ -348,7 +404,7 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
                 <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: colors.textPrimary }]}>Title (Optional)</Text>
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
+                    style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.textPrimary }]}
                     placeholder="Enter a title"
                     placeholderTextColor={colors.textTertiary}
                     value={title}
@@ -376,7 +432,7 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
                   
                   {folderExpanded && (
                     <ScrollView 
-                      style={[styles.folderList, { backgroundColor: colors.background, borderColor: colors.border }]}
+                      style={[styles.folderList, { backgroundColor: colors.backgroundTertiary, borderColor: colors.border }]}
                       nestedScrollEnabled={true}
                       showsVerticalScrollIndicator={true}
                     >
@@ -550,6 +606,60 @@ const styles = StyleSheet.create({
   },
   typeToggleButtonTextActive: {
     fontWeight: '600',
+  },
+  toggleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  badge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  comingSoonPopup: {
+    position: 'absolute',
+    top: 80,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 16,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  popupTextContainer: {
+    flex: 1,
+  },
+  popupTitle: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 2,
+    letterSpacing: -0.2,
+  },
+  popupMessage: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '500',
+    opacity: 0.95,
+  },
+  popupCloseButton: {
+    padding: 4,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   form: {
     paddingHorizontal: 20,

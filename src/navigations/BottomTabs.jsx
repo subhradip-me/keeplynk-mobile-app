@@ -55,7 +55,7 @@ export default function BottomTabs() {
           backgroundColor: colors.surface,
           borderTopWidth: 0,
           height: 92,
-          paddingBottom: 20,
+          paddingBottom: 28,
           paddingTop: 8,
           elevation: 8,
           shadowColor: '#000',

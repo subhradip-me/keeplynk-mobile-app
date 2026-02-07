@@ -399,12 +399,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   linkList: {
-    padding: 12,
-    paddingBottom: 32,
+    padding: 16,
+    paddingBottom: 28,
   },
   uncategorisedHeader: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
   },
   uncategorisedTitle: {

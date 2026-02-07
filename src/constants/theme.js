@@ -26,11 +26,11 @@ export const Colors = {
 
 export const LightTheme = {
   // Background colors - Notion's clean palette
-  background: '#FFFFFF',
-  backgroundSecondary: '#FAFAFA',
-  backgroundTertiary: '#F7F6F3',
-  surface: '#FFFFFF',
-  surfaceHover: '#F7F6F3',
+  background: '#E7E7E7',
+  backgroundSecondary: '#F4F4F4',
+  backgroundTertiary: '#ffffffff',
+  surface: '#ffffffff',
+  surfaceHover: '#F4F4F4',
   
   // Text colors - Notion's text hierarchy
   textPrimary: '#37352F',
@@ -64,11 +64,11 @@ export const LightTheme = {
 
 export const DarkTheme = {
   // Background colors - Dark mode palette (using reversed scale)
-  background: '#0F0F0F',          // 900 - Darkest background
-  backgroundSecondary: '#1C1C1C', // 800 - Secondary surfaces
-  backgroundTertiary: '#3C3C3C',  // 700 - Tertiary/elevated surfaces
-  surface: '#2C2C2C',             // 800 - Card/modal surfaces 1C1C1C
-  surfaceHover: '#1C1C1C',        // 700 - Hover state for surfaces
+  background: '#18181B',          // 900 - Darkest background
+  backgroundSecondary: '#27272A', // 800 - Secondary surfaces
+  backgroundTertiary: '#3f3f46',  // 700 - Tertiary/elevated surfaces
+  surface: '#3f3f46',             // 800 - Card/modal surfaces 1C1C1C
+  surfaceHover: '#27272A',        // 700 - Hover state for surfaces
   
   // Text colors - Dark mode text hierarchy
   textPrimary: '#F4F4F4',         // 100 - Highest contrast text
@@ -77,9 +77,9 @@ export const DarkTheme = {
   textDisabled: '#7A7A7A',        // 500 - Disabled text
   
   // Border colors - Subtle dark borders
-  border: '#5A5A5A',              // 600 - Default borders
-  borderLight: '#3C3C3C',         // 700 - Subtle borders
-  divider: '#3C3C3C',             // 700 - Divider lines
+  border: '#52525b',              // 600 - Default borders
+  borderLight: '#3f3f46',         // 700 - Subtle borders
+  divider: '#3f3f46',             // 700 - Divider lines
   
   // Primary colors (slightly adjusted for dark mode)
   primary: Colors.primaryLight,

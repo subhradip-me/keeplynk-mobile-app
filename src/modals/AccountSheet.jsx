@@ -39,7 +39,7 @@ export default function AccountSheet({ visible, onClose, onLogout, user, onAccou
         <Animated.View 
           style={[
             styles.sheet,
-            { backgroundColor: colors.background, transform: [{ translateY: slideAnim }] }
+            { backgroundColor: colors.backgroundTertiary, transform: [{ translateY: slideAnim }] }
           ]}
         >
           <View style={[styles.handle, { backgroundColor: colors.textPrimary }]} />
