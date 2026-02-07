@@ -10,7 +10,7 @@ import { useTheme } from '../features/theme';
 
 const Stack = createNativeStackNavigator();
 
-export default function RootStack() {
+export default function RootStack({ sharedData, onShareProcessed }) {
   useAuthInit(); // Initialize auth on app startup
   const { isAuthenticated, loading } = useAuth();
   const { colors } = useTheme();
@@ -32,7 +32,9 @@ export default function RootStack() {
       initialRouteName={isAuthenticated ? 'Main' : 'Auth'}
     >
       <Stack.Screen name="Auth" component={AuthScreen} />
-      <Stack.Screen name="Main" component={BottomTabs} />
+      <Stack.Screen name="Main">
+        {props => <BottomTabs {...props} sharedData={sharedData} onShareProcessed={onShareProcessed} />}
+      </Stack.Screen>
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="Trash" component={TrashScreen} />
     </Stack.Navigator>

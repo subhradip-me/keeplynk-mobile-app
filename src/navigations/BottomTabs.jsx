@@ -29,18 +29,34 @@ const tabBarIcon = (route) => ({ focused, color }) => {
   return <Icon name={name} size={size} color={color} />;
 };
 
-export default function BottomTabs() {
+export default function BottomTabs({ sharedData, onShareProcessed }) {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const { createResource } = useResources();
   const { colors } = useTheme();
+
+  // Open modal automatically when shared data is received
+  React.useEffect(() => {
+    if (sharedData) {
+      console.log('📲 Opening modal with shared data:', sharedData);
+      setIsAddModalVisible(true);
+    }
+  }, [sharedData]);
 
   const handleSaveResource = (resource) => {
     createResource({
       type: 'url',
       url: resource.url,
       title: resource.title,
-      folderId: resource.folder !== 'Uncategorised' ? resource.folder : null,
+      folderId: resource.folderId || null,
     });
+  };
+
+  const handleModalClose = () => {
+    setIsAddModalVisible(false);
+    // Clear shared data after modal closes
+    if (sharedData && onShareProcessed) {
+      onShareProcessed();
+    }
   };
 
   return (
@@ -88,8 +104,10 @@ export default function BottomTabs() {
 
     <AddResourceModal
       visible={isAddModalVisible}
-      onClose={() => setIsAddModalVisible(false)}
+      onClose={handleModalClose}
       onSave={handleSaveResource}
+      initialUrl={sharedData?.url}
+      initialTitle={sharedData?.title}
     />
     </>
   );

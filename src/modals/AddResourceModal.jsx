@@ -16,7 +16,7 @@ import { useFolders } from '../features/folders/folderHooks';
 import { useTheme } from '../features/theme';
 
 
-export default function AddResourceModal({ visible, onClose, onSave }) {
+export default function AddResourceModal({ visible, onClose, onSave, initialUrl = '', initialTitle = '' }) {
   const { colors } = useTheme();
   const { folders } = useFolders();
   const [resourceType, setResourceType] = useState('url');
@@ -31,6 +31,16 @@ export default function AddResourceModal({ visible, onClose, onSave }) {
   const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(300)).current;
   const popupAnim = React.useRef(new Animated.Value(0)).current;
+
+  // Pre-fill form when shared data is received
+  React.useEffect(() => {
+    if (initialUrl) {
+      console.log('📝 Pre-filling form with:', { initialUrl, initialTitle });
+      setUrl(initialUrl);
+      setTitle(initialTitle);
+      setResourceType('url');
+    }
+  }, [initialUrl, initialTitle]);
 
   React.useEffect(() => {
     if (visible) {

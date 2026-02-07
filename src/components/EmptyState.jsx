@@ -31,7 +31,7 @@ export default function EmptyState({
       <View style={[styles.iconContainer, { backgroundColor: colors.hover }]}>
         <Icon name={icon} size={48} color={colors.textSecondary} />
       </View>
-      <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+      <Text style={[styles.title, { color: colors.textSecondary }]}>{title}</Text>
       <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
       {actionText && onAction && (
         <Pressable 
