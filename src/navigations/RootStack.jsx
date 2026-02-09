@@ -1,10 +1,10 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, View, StyleSheet, Text } from 'react-native';
 import BottomTabs from './BottomTabs';
 import AuthScreen from '../screens/AuthScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import TrashScreen from '../screens/TrashScreen';
+import LoadingScreen from '../screens/LoadingScreen';
 import { useAuth, useAuthInit } from '../features/auth/authHooks';
 import { useTheme } from '../features/theme';
 
@@ -18,12 +18,7 @@ export default function RootStack({ sharedData, onShareProcessed }) {
   console.log('RootStack render:', { isAuthenticated, loading });
 
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ marginTop: 10, color: colors.textPrimary }}>Loading...</Text>
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
@@ -40,11 +35,4 @@ export default function RootStack({ sharedData, onShareProcessed }) {
     </Stack.Navigator>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
+ 

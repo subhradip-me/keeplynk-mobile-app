@@ -35,6 +35,16 @@ local.properties
 !debug.keystore
 .kotlin/
 
+# Environment Variables
+.env
+.env.local
+.env.production
+
+# Keystore - Security Critical
+keystore.properties
+*-release.keystore
+KEYSTORE_BACKUP.md
+
 # node.js
 #
 node_modules/

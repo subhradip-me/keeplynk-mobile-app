@@ -1,21 +1,8 @@
 /**
  * Authentication API
- * React Native version using in-memory storage replacement
+ * React Native version with AsyncStorage for persistent authentication
  */
-// Simple in-memory storage replacement for AsyncStorage
-const memoryStorage = {
-  data: {},
-  setItem: async (key, value) => {
-    memoryStorage.data[key] = value;
-  },
-  getItem: async (key) => {
-    return memoryStorage.data[key] || null;
-  },
-  removeItem: async (key) => {
-    delete memoryStorage.data[key];
-  }
-};
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiService from '../api';
 import { ApiTokenManager } from '../api/axios';
 
@@ -28,8 +15,8 @@ export const authAPI = {
       const user = data.user || data.data?.user;
       
       if (token && user) {
-        await memoryStorage.setItem('auth_token', token);
-        await memoryStorage.setItem('user_data', JSON.stringify(user));
+        await AsyncStorage.setItem('auth_token', token);
+        await AsyncStorage.setItem('user_data', JSON.stringify(user));
         ApiTokenManager.setToken(token);
         return { token, user };
       }
@@ -46,8 +33,8 @@ export const authAPI = {
       const user = data.user || data.data?.user;
       
       if (token && user) {
-        await memoryStorage.setItem('auth_token', token);
-        await memoryStorage.setItem('user_data', JSON.stringify(user));
+        await AsyncStorage.setItem('auth_token', token);
+        await AsyncStorage.setItem('user_data', JSON.stringify(user));
         ApiTokenManager.setToken(token);
         return { token, user };
       }
@@ -58,8 +45,8 @@ export const authAPI = {
   },
   logout: async () => {
     try {
-      await memoryStorage.removeItem('auth_token');
-      await memoryStorage.removeItem('user_data');
+      await AsyncStorage.removeItem('auth_token');
+      await AsyncStorage.removeItem('user_data');
       ApiTokenManager.clearToken();
     } catch (error) {
       console.error('Logout error:', error);
@@ -71,7 +58,7 @@ export const authAPI = {
   addPersona: async (persona) => {
     const response = await apiService.addPersona(persona);
     if (response.token) {
-      await memoryStorage.setItem('auth_token', response.token);
+      await AsyncStorage.setItem('auth_token', response.token);
       ApiTokenManager.setToken(response.token);
     }
     return response;
@@ -79,7 +66,7 @@ export const authAPI = {
   switchPersona: async (persona) => {
     const response = await apiService.switchPersona(persona);
     if (response.token) {
-      await memoryStorage.setItem('auth_token', response.token);
+      await AsyncStorage.setItem('auth_token', response.token);
       ApiTokenManager.setToken(response.token);
     }
     return response;
@@ -89,8 +76,8 @@ export const authAPI = {
   },
   loadStoredAuth: async () => {
     try {
-      const token = await memoryStorage.getItem('auth_token');
-      const userData = await memoryStorage.getItem('user_data');
+      const token = await AsyncStorage.getItem('auth_token');
+      const userData = await AsyncStorage.getItem('user_data');
       if (token && userData) {
         ApiTokenManager.setToken(token);
         return {
