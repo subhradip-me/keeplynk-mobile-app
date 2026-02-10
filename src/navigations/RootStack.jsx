@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BottomTabs from './BottomTabs';
 import AuthScreen from '../screens/AuthScreen';
@@ -14,10 +14,20 @@ export default function RootStack({ sharedData, onShareProcessed }) {
   useAuthInit(); // Initialize auth on app startup
   const { isAuthenticated, loading } = useAuth();
   const { colors } = useTheme();
+  const [minLoadingTime, setMinLoadingTime] = useState(true);
+
+  useEffect(() => {
+    // Minimum loading screen display time of 1.5 seconds
+    const timer = setTimeout(() => {
+      setMinLoadingTime(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   console.log('RootStack render:', { isAuthenticated, loading });
 
-  if (loading) {
+  if (loading || minLoadingTime) {
     return <LoadingScreen />;
   }
 

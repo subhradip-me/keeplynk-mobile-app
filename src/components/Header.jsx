@@ -42,7 +42,7 @@ export default function Header({ onAccountPress, onMorePress, activeTab, onAutoO
             <View style={[styles.headerProfileIcon, { backgroundColor: colors.backgroundTertiary }]}>
               <Text style={[styles.headerProfileInitial, { color: colors.textSecondary }]}>{user?.firstName?.[0] || 'U'}</Text>
             </View>
-            <Text style={[styles.headerProfileText, { color: colors.textSecondary }]}>{user?.firstName} {user?.lastName}</Text>
+            <Text style={[styles.headerProfileText, { color: colors.textSecondary }]}>{user?.firstName}'s space</Text>
             <Icon name="keyboard-arrow-down" size={20} color={colors.textSecondary} />
           </View>
         </Pressable>

@@ -47,6 +47,7 @@ export const LightTheme = {
   primary: Colors.primary,
   primaryDark: Colors.primaryDark,
   primaryLight: Colors.primaryLight,
+  progress: '#161616ff',
   
   // Status colors
   success: Colors.success,
@@ -85,12 +86,14 @@ export const DarkTheme = {
   primary: Colors.primaryLight,
   primaryDark: Colors.primary,
   primaryLight: '#7BB8FA',
+  progress: '#dbdbdbff',
   
   // Status colors (brighter for dark mode)
   success: '#10A37F',
   warning: '#F5B94D',
   error: '#F15B5B',
   info: Colors.primaryLight,
+
   
   // Accent colors (slightly brighter for dark mode)
   favorite: '#FFB366',

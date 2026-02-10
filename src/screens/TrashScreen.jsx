@@ -1,5 +1,5 @@
-import React, { useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, Alert } from 'react-native';
+import React, { useMemo, useCallback, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, Pressable, Alert, Modal, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
@@ -25,6 +25,12 @@ export default function TrashScreen() {
   const navigation = useNavigation();
   const { resources = [] } = useResources();
   const { folders } = useFolders();
+  const [showActionsModal, setShowActionsModal] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRestoreAllModal, setShowRestoreAllModal] = useState(false);
+  const [showEmptyTrashModal, setShowEmptyTrashModal] = useState(false);
+  const [selectedResource, setSelectedResource] = useState(null);
   
   // Create a folder lookup map
   const folderMap = useMemo(() => {
@@ -42,105 +48,79 @@ export default function TrashScreen() {
   );
 
   const handleRestore = useCallback(async (resource) => {
-    Alert.alert(
-      'Restore Item',
-      `Restore "${resource.title}" from trash?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Restore', 
-          onPress: async () => {
-            try {
-              await dispatch(restoreResourceFromTrash(resource._id)).unwrap();
-              // Silently refetch in background to get properly populated tags
-              dispatch(fetchResources());
-            } catch (error) {
-              Alert.alert('Error', 'Failed to restore resource');
-              console.error('Failed to restore resource:', error);
-            }
-          }
-        },
-      ]
-    );
-  }, [dispatch]);
+    setSelectedResource(resource);
+    setShowRestoreModal(true);
+  }, []);
+
+  const confirmRestore = useCallback(async () => {
+    if (!selectedResource) return;
+    
+    setShowRestoreModal(false);
+    try {
+      await dispatch(restoreResourceFromTrash(selectedResource._id)).unwrap();
+      dispatch(fetchResources());
+    } catch (error) {
+      Alert.alert('Error', 'Failed to restore resource');
+      console.error('Failed to restore resource:', error);
+    }
+    setSelectedResource(null);
+  }, [dispatch, selectedResource]);
 
   const handlePermanentDelete = useCallback(async (resource) => {
-    Alert.alert(
-      'Delete Permanently',
-      `Permanently delete "${resource.title}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await dispatch(deleteResource(resource._id)).unwrap();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete resource');
-              console.error('Failed to delete resource:', error);
-            }
-          }
-        },
-      ]
-    );
-  }, [dispatch]);
+    setSelectedResource(resource);
+    setShowDeleteModal(true);
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    if (!selectedResource) return;
+    
+    setShowDeleteModal(false);
+    try {
+      await dispatch(deleteResource(selectedResource._id)).unwrap();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to delete resource');
+      console.error('Failed to delete resource:', error);
+    }
+    setSelectedResource(null);
+  }, [dispatch, selectedResource]);
 
   const handleEmptyTrash = useCallback(async () => {
     if (trashedResources.length === 0) return;
-    
-    Alert.alert(
-      'Empty Trash',
-      `Permanently delete all ${trashedResources.length} items? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Empty Trash', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await Promise.all(
-                trashedResources.map(resource => 
-                  dispatch(deleteResource(resource._id)).unwrap()
-                )
-              );
-            } catch (error) {
-              Alert.alert('Error', 'Failed to empty trash');
-              console.error('Failed to empty trash:', error);
-            }
-          }
-        },
-      ]
-    );
+    setShowEmptyTrashModal(true);
+  }, [trashedResources]);
+
+  const confirmEmptyTrash = useCallback(async () => {
+    setShowEmptyTrashModal(false);
+    try {
+      await Promise.all(
+        trashedResources.map(resource => 
+          dispatch(deleteResource(resource._id)).unwrap()
+        )
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to empty trash');
+      console.error('Failed to empty trash:', error);
+    }
   }, [trashedResources, dispatch]);
 
   const handleRestoreAll = useCallback(async () => {
     if (trashedResources.length === 0) return;
-    
-    Alert.alert(
-      'Restore All',
-      `Restore all ${trashedResources.length} items from trash?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Restore All', 
-          onPress: async () => {
-            try {
-              await Promise.all(
-                trashedResources.map(resource => 
-                  dispatch(restoreResourceFromTrash(resource._id)).unwrap()
-                )
-              );
-              // Silently refetch in background to get properly populated tags
-              dispatch(fetchResources());
-            } catch (error) {
-              Alert.alert('Error', 'Failed to restore all resources');
-              console.error('Failed to restore all resources:', error);
-            }
-          }
-        },
-      ]
-    );
+    setShowRestoreAllModal(true);
+  }, [trashedResources]);
+
+  const confirmRestoreAll = useCallback(async () => {
+    setShowRestoreAllModal(false);
+    try {
+      await Promise.all(
+        trashedResources.map(resource => 
+          dispatch(restoreResourceFromTrash(resource._id)).unwrap()
+        )
+      );
+      dispatch(fetchResources());
+    } catch (error) {
+      Alert.alert('Error', 'Failed to restore all resources');
+      console.error('Failed to restore all resources:', error);
+    }
   }, [trashedResources, dispatch]);
 
   const renderTrashItem = useCallback(({ item }) => (
@@ -153,10 +133,13 @@ export default function TrashScreen() {
       isFavorite={item.isFavorite}
       type={item.type}
       onPress={() => {}} // No action on press in trash
-      onEdit={() => handleRestore(item)} // Use edit for restore
-      onMoveToFolder={() => {}} // Disable move in trash
-      onDelete={() => handlePermanentDelete(item)}
-      onToggleFavorite={() => {}} // Disable favorite toggle in trash
+      onRestore={() => handleRestore(item)} // Restore action
+      onDelete={() => handlePermanentDelete(item)} // Permanent delete action
+      // Disable other actions in trash
+      onEdit={null}
+      onMoveToFolder={null}
+      onToggleFavorite={null}
+      showOnlyTrashActions={true} // Flag to show only restore and delete actions
     />
   ), [handleRestore, handlePermanentDelete, folderMap]);
 
@@ -178,30 +161,15 @@ export default function TrashScreen() {
             <Text style={[styles.itemCount, { color: colors.textSecondary }]}>{trashedResources.length} items</Text>
           </View>
         </View>
+        {trashedResources.length > 0 && (
+          <Pressable 
+            onPress={() => setShowActionsModal(true)}
+            style={styles.moreButton}
+          >
+            <Icon name="more-vert" size={24} color={colors.textPrimary} />
+          </Pressable>
+        )}
       </View>
-
-      {/* Action Bar */}
-      {trashedResources.length > 0 && (
-        <View style={[styles.actionBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <Pressable 
-            style={[styles.actionBarButton, { backgroundColor: colors.surfaceHover }]}
-            onPress={handleRestoreAll}
-          >
-            <Icon name="restore" size={18} color={colors.primary} />
-            <Text style={[styles.actionBarButtonText, { color: colors.primary }]}>Restore All</Text>
-          </Pressable>
-          <View style={[styles.actionBarDivider, { backgroundColor: colors.border }]} />
-          <Pressable 
-            style={[styles.actionBarButton, { backgroundColor: colors.surfaceHover }]}
-            onPress={handleEmptyTrash}
-          >
-            <Icon name="delete-forever" size={18} color={colors.error} />
-            <Text style={[styles.actionBarButtonText, { color: colors.error }]}>
-              Empty Trash
-            </Text>
-          </Pressable>
-        </View>
-      )}
 
       {/* Trash List */}
       {trashedResources.length === 0 ? (
@@ -220,6 +188,257 @@ export default function TrashScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* Actions Modal */}
+      <Modal
+        visible={showActionsModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowActionsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1} 
+            onPress={() => setShowActionsModal(false)}
+          />
+          <View style={[styles.modalContent, { backgroundColor: colors.surface, shadowColor: colors.shadow }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Trash Actions</Text>
+              <Pressable 
+                onPress={() => setShowActionsModal(false)}
+                style={[styles.modalCloseButton, { backgroundColor: colors.backgroundTertiary }]}
+              >
+                <Icon name="close" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+            
+            <View style={styles.modalBody}>
+              <Pressable
+                style={[styles.modalOption, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => {
+                  setShowActionsModal(false);
+                  handleRestoreAll();
+                }}
+              >
+                <View style={[styles.modalOptionIcon, { backgroundColor: colors.primary + '15' }]}>
+                  <Icon name="restore" size={24} color={colors.primary} />
+                </View>
+                <View style={styles.modalOptionContent}>
+                  <Text style={[styles.modalOptionText, { color: colors.textPrimary }]}>Restore All Items</Text>
+                  <Text style={[styles.modalOptionSubtext, { color: colors.textSecondary }]}>Move all items back to their original folders</Text>
+                </View>
+              </Pressable>
+
+              <Pressable
+                style={[styles.modalOption, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => {
+                  setShowActionsModal(false);
+                  handleEmptyTrash();
+                }}
+              >
+                <View style={[styles.modalOptionIcon, { backgroundColor: colors.error + '15' }]}>
+                  <Icon name="delete-forever" size={24} color={colors.error} />
+                </View>
+                <View style={styles.modalOptionContent}>
+                  <Text style={[styles.modalOptionText, { color: colors.textPrimary }]}>Empty Trash</Text>
+                  <Text style={[styles.modalOptionSubtext, { color: colors.textSecondary }]}>Permanently delete all items (cannot be undone)</Text>
+                </View>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Restore Confirmation Modal */}
+      <Modal
+        visible={showRestoreModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowRestoreModal(false);
+          setSelectedResource(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1} 
+            onPress={() => {
+              setShowRestoreModal(false);
+              setSelectedResource(null);
+            }}
+          />
+          <View style={[styles.confirmationModal, { backgroundColor: colors.surface, shadowColor: colors.shadow }]}>
+            <View style={styles.confirmationHeader}>
+              <View style={[styles.confirmationIcon, { backgroundColor: colors.primary + '15' }]}>
+                <Icon name="restore" size={28} color={colors.primary} />
+              </View>
+              <Text style={[styles.confirmationTitle, { color: colors.textPrimary }]}>Restore Item</Text>
+              <Text style={[styles.confirmationMessage, { color: colors.textSecondary }]}>
+                Restore "{selectedResource?.title}" from trash? It will be moved back to its original folder.
+              </Text>
+            </View>
+            
+            <View style={styles.confirmationActions}>
+              <Pressable
+                style={[styles.confirmationButton, styles.cancelButton, { backgroundColor: colors.backgroundTertiary }]}
+                onPress={() => {
+                  setShowRestoreModal(false);
+                  setSelectedResource(null);
+                }}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.confirmationButton, styles.primaryButton, { backgroundColor: colors.primary }]}
+                onPress={confirmRestore}
+              >
+                <Icon name="restore" size={18} color="#FFFFFF" />
+                <Text style={styles.primaryButtonText}>Restore</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowDeleteModal(false);
+          setSelectedResource(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1} 
+            onPress={() => {
+              setShowDeleteModal(false);
+              setSelectedResource(null);
+            }}
+          />
+          <View style={[styles.confirmationModal, { backgroundColor: colors.surface, shadowColor: colors.shadow }]}>
+            <View style={styles.confirmationHeader}>
+              <View style={[styles.confirmationIcon, { backgroundColor: colors.error + '15' }]}>
+                <Icon name="delete-forever" size={28} color={colors.error} />
+              </View>
+              <Text style={[styles.confirmationTitle, { color: colors.textPrimary }]}>Delete Permanently</Text>
+              <Text style={[styles.confirmationMessage, { color: colors.textSecondary }]}>
+                Permanently delete "{selectedResource?.title}"? This action cannot be undone.
+              </Text>
+            </View>
+            
+            <View style={styles.confirmationActions}>
+              <Pressable
+                style={[styles.confirmationButton, styles.cancelButton, { backgroundColor: colors.backgroundTertiary }]}
+                onPress={() => {
+                  setShowDeleteModal(false);
+                  setSelectedResource(null);
+                }}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.confirmationButton, styles.dangerButton, { backgroundColor: colors.error }]}
+                onPress={confirmDelete}
+              >
+                <Icon name="delete-forever" size={18} color="#FFFFFF" />
+                <Text style={styles.dangerButtonText}>Delete</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Restore All Confirmation Modal */}
+      <Modal
+        visible={showRestoreAllModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowRestoreAllModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1} 
+            onPress={() => setShowRestoreAllModal(false)}
+          />
+          <View style={[styles.confirmationModal, { backgroundColor: colors.surface, shadowColor: colors.shadow }]}>
+            <View style={styles.confirmationHeader}>
+              <View style={[styles.confirmationIcon, { backgroundColor: colors.primary + '15' }]}>
+                <Icon name="restore" size={28} color={colors.primary} />
+              </View>
+              <Text style={[styles.confirmationTitle, { color: colors.textPrimary }]}>Restore All Items</Text>
+              <Text style={[styles.confirmationMessage, { color: colors.textSecondary }]}>
+                Restore all {trashedResources.length} items from trash? They will be moved back to their original folders.
+              </Text>
+            </View>
+            
+            <View style={styles.confirmationActions}>
+              <Pressable
+                style={[styles.confirmationButton, styles.cancelButton, { backgroundColor: colors.backgroundTertiary }]}
+                onPress={() => setShowRestoreAllModal(false)}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.confirmationButton, styles.primaryButton, { backgroundColor: colors.primary }]}
+                onPress={confirmRestoreAll}
+              >
+                <Icon name="restore" size={18} color="#FFFFFF" />
+                <Text style={styles.primaryButtonText}>Restore All</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Empty Trash Confirmation Modal */}
+      <Modal
+        visible={showEmptyTrashModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowEmptyTrashModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1} 
+            onPress={() => setShowEmptyTrashModal(false)}
+          />
+          <View style={[styles.confirmationModal, { backgroundColor: colors.surface, shadowColor: colors.shadow }]}>
+            <View style={styles.confirmationHeader}>
+              <View style={[styles.confirmationIcon, { backgroundColor: colors.error + '15' }]}>
+                <Icon name="delete-forever" size={28} color={colors.error} />
+              </View>
+              <Text style={[styles.confirmationTitle, { color: colors.textPrimary }]}>Empty Trash</Text>
+              <Text style={[styles.confirmationMessage, { color: colors.textSecondary }]}>
+                Permanently delete all {trashedResources.length} items? This action cannot be undone.
+              </Text>
+            </View>
+            
+            <View style={styles.confirmationActions}>
+              <Pressable
+                style={[styles.confirmationButton, styles.cancelButton, { backgroundColor: colors.backgroundTertiary }]}
+                onPress={() => setShowEmptyTrashModal(false)}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.confirmationButton, styles.dangerButton, { backgroundColor: colors.error }]}
+                onPress={confirmEmptyTrash}
+              >
+                <Icon name="delete-forever" size={18} color="#FFFFFF" />
+                <Text style={styles.dangerButtonText}>Empty Trash</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Info Banner */}
       {trashedResources.length > 0 && (
@@ -249,6 +468,9 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 4,
   },
+  moreButton: {
+    padding: 4,
+  },
   headerContent: {
     flex: 1,
     flexDirection: 'row',
@@ -274,34 +496,6 @@ const styles = StyleSheet.create({
   itemCount: {
     fontSize: 13,
     marginTop: 2,
-  },
-  actionBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    gap: 12,
-  },
-  actionBarButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  actionBarButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  actionBarButtonTextDanger: {
-  },
-  actionBarDivider: {
-    width: 1,
-    height: 24,
   },
   list: {
     padding: 12,
@@ -338,5 +532,157 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     lineHeight: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.4,
+  },
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBody: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    gap: 12,
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 16,
+  },
+  modalOptionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalOptionContent: {
+    flex: 1,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  modalOptionSubtext: {
+    fontSize: 13,
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  confirmationModal: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 8,
+    paddingVertical: 24,
+    paddingHorizontal: 24,
+  },
+  confirmationHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  confirmationIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  confirmationTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+    letterSpacing: -0.4,
+  },
+  confirmationMessage: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 8,
+  },
+  confirmationActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  confirmationButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    // backgroundColor handled by colors
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  dangerButton: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
+  },
+  dangerButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
   },
 });

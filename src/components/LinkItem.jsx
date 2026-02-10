@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, Image, Modal, TouchableOpacity, Dime
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../features/theme';
 
-const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type = 'bookmark', onPress, onLongPress, onEdit,onMoveToFolder, onDelete, onToggleFavorite, resource }) => {
+const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type = 'bookmark', onPress, onLongPress, onEdit, onMoveToFolder, onDelete, onToggleFavorite, onRestore, showOnlyTrashActions = false, resource }) => {
   const { colors } = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 100, right: 16 });
@@ -26,7 +26,10 @@ const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type
     setTimeout(() => action(), 100);
   };
 
-  const menuItems = [
+  const menuItems = showOnlyTrashActions ? [
+    { label: 'Restore', icon: 'restore', action: () => onRestore?.() },
+    { label: 'Delete Permanently', icon: 'delete-forever', action: () => onDelete?.(), danger: true },
+  ] : [
     { label: 'Edit', icon: 'edit', action: () => onEdit?.() },
     { label: 'Move to Folder', icon: 'folder', action: () => onMoveToFolder?.() },
     { label: isFavorite ? 'Remove Favorite' : 'Add to Favorites', icon: isFavorite ? 'favorite' : 'favorite-border', action: () => onToggleFavorite?.() },

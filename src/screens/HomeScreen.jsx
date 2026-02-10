@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Header from '../components/Header';
 import HomeTabs from '../components/HomeTabs';
@@ -20,13 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../features/theme';
 
 export default function HomeScreen() {
-  const dispatch = useDispatch();
-  const { user } = useAuth();
-  const { resources, fetchResources, updateResource } = useResources();
-  const { folders, fetchFolders } = useFolders();
-  const { colors } = useTheme();
-  const autoOrganize = useAutoOrganize();
-  const isAutoOrganizing = useAutoOrganizing();
+  // All useState hooks first
   const [activeTab, setActiveTab] = useState('All');
   const [accountSheetVisible, setAccountSheetVisible] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -38,10 +32,34 @@ export default function HomeScreen() {
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewResource, setPreviewResource] = useState(null);
   const [autoOrganiseSheetVisible, setAutoOrganiseSheetVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Then all other hooks
+  const dispatch = useDispatch();
+  const { user } = useAuth();
+  const { resources, fetchResources, updateResource } = useResources();
+  const { folders, fetchFolders } = useFolders();
+  const { colors } = useTheme();
+  const autoOrganize = useAutoOrganize();
+  const isAutoOrganizing = useAutoOrganizing();
 
   useEffect(() => {
     fetchResources();
     fetchFolders();
+  }, [fetchResources, fetchFolders]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        fetchResources(),
+        fetchFolders()
+      ]);
+    } catch (error) {
+      console.error('Failed to refresh:', error);
+    } finally {
+      setRefreshing(false);
+    }
   }, [fetchResources, fetchFolders]);
 
   const handleMorePress = useCallback(() => console.log('More pressed'), []);
@@ -283,32 +301,40 @@ export default function HomeScreen() {
 
       {/* Selection Mode Header */}
       {selectionMode && activeTab === 'Uncategorised' && (
-        <View style={[styles.selectionHeader, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.border }]}>
-          <View style={styles.selectionLeft}>
-            <Text style={[styles.selectionCount, { color: colors.textPrimary }]}>
-              {selectedItems.length} selected
-            </Text>
-          </View>
-          <View style={styles.selectionActions}>
-            <Pressable 
-              onPress={handleSelectAll}
-              style={({ pressed }) => [
-                styles.selectAllButton,
-                { backgroundColor: colors.backgroundTertiary },
-                pressed && { opacity: 0.7 }
-              ]}
-            >
-              <Text style={[styles.selectAllText, { color: colors.textPrimary }]}>Select All</Text>
-            </Pressable>
-            <Pressable 
-              onPress={exitSelectionMode} 
-              style={({ pressed }) => [
-                styles.cancelButton,
-                pressed && { opacity: 0.7 }
-              ]}
-            >
-              <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
-            </Pressable>
+        <View style={[
+          styles.selectionHeader, 
+          { 
+            backgroundColor: colors.backgroundSecondary, 
+            borderBottomColor: colors.border
+          }
+        ]}>
+          <View style={styles.selectionContent}>
+            <View style={styles.selectionLeft}>
+              <Text style={[styles.selectionCount, { color: colors.textPrimary }]}>
+                {selectedItems.length} selected
+              </Text>
+            </View>
+            <View style={styles.selectionActions}>
+              <Pressable 
+                onPress={handleSelectAll}
+                style={({ pressed }) => [
+                  styles.selectAllButton,
+                  { backgroundColor: colors.backgroundTertiary },
+                  pressed && { opacity: 0.7 }
+                ]}
+              >
+                <Text style={[styles.selectAllText, { color: colors.textPrimary }]}>Select All</Text>
+              </Pressable>
+              <Pressable 
+                onPress={exitSelectionMode} 
+                style={({ pressed }) => [
+                  styles.cancelButton,
+                  pressed && { opacity: 0.7 }
+                ]}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       )}
@@ -326,6 +352,14 @@ export default function HomeScreen() {
         updateCellsBatchingPeriod={50}
         initialNumToRender={10}
         windowSize={5}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
         ListEmptyComponent={
           <EmptyState
             icon="link"
@@ -435,12 +469,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   selectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
+  },
+  selectionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   selectionLeft: {
     flex: 1,

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable, Switch } from 'react-native';
-import AccountSheet from '../modals/AccountSheet';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable, Switch, Alert } from 'react-native';
 import { Colors, Spacing, BorderRadius, FontSizes, FontWeights, Shadows } from '../constants/theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,19 +9,34 @@ import { useTheme } from '../features/theme';
 export default function ProfileScreen({ navigation }) {
   const { colors, isDark, toggle } = useTheme();
   const { user, logout, isAuthenticated } = useAuth();
-  const [showAccountSheet, setShowAccountSheet] = useState(false);
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      // Navigate to Auth screen after logout
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Auth' }],
-      });
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+              // Navigate to Auth screen after logout
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Auth' }],
+              });
+            } catch (error) {
+              console.error('Logout error:', error);
+            }
+          },
+        },
+      ],
+    );
   };
 
   // Ensure user data is available
@@ -52,10 +66,7 @@ export default function ProfileScreen({ navigation }) {
       <ScrollView style={styles.content}>
         {/* User Info Section */}
         <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <TouchableOpacity
-            style={styles.userCard}
-            onPress={() => setShowAccountSheet(true)}
-          >
+          <View style={styles.userCard}>
             <View style={[styles.avatar, { backgroundColor: colors.backgroundTertiary, borderColor: colors.divider }]}>
               <Text style={[styles.avatarText, { color: colors.textPrimary }]}>
                 {avatarInitial}
@@ -67,8 +78,7 @@ export default function ProfileScreen({ navigation }) {
               </Text>
               <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{displayEmail}</Text>
             </View>
-            <Icon name="chevron-right" size={24} color={colors.textTertiary} />
-          </TouchableOpacity>
+          </View>
         </View>
 
         {/* Settings Section */}
@@ -122,7 +132,7 @@ export default function ProfileScreen({ navigation }) {
         <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <TouchableOpacity
             style={styles.logoutButton}
-            onPress={() => setShowAccountSheet(true)}
+            onPress={handleLogout}
           >
             <Icon name="logout" size={20} color={colors.error} />
             <Text style={[styles.logoutText, { color: colors.error }]}>Log Out</Text>
@@ -131,14 +141,6 @@ export default function ProfileScreen({ navigation }) {
 
         <Text style={[styles.version, { color: colors.textTertiary }]}>Version 1.0.0</Text>
       </ScrollView>
-
-      <AccountSheet
-        visible={showAccountSheet}
-        onClose={() => setShowAccountSheet(false)}
-        onLogout={handleLogout}
-        user={user}
-        onAccountDetails={() => setShowAccountSheet(false)}
-      />
     </SafeAreaView>
   );
 }
