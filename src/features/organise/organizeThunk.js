@@ -4,7 +4,7 @@ import organizeAPI from "../../services/organize";
 // Auto organize resources
 export const autoOrganizeResources = createAsyncThunk(
     'organize/autoOrganize',
-    async (limit = 50, { rejectWithValue }) => {
+    async (limit = 10, { rejectWithValue }) => {
         try {
             const response = await organizeAPI.autoOrganize(limit);
             return response;

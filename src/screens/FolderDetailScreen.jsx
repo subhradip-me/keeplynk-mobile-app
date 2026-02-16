@@ -5,6 +5,8 @@ import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders';
 import { useTheme } from '../features/theme';
 import { makeResourceFavorite, moveResourceToTrash, fetchResources } from '../features/resources/resourceThunk';
+import { fetchFolders } from '../features/folders/folderThunk';
+import { autoOrganizeResources } from '../features/organise';
 import { useDispatch } from 'react-redux';
 import LinkItem from '../components/LinkItem';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -13,6 +15,7 @@ import PreviewResourceModal from '../modals/PreviewResourceModal';
 import EditResourceModal from '../modals/EditResourceModal';
 import EditFolderModal from '../modals/EditFolderModal';
 import MoveToFolderSheet from '../modals/MoveToFolderSheet';
+import AutoOrganiseSheet from '../modals/AutoOrganiseSheet';
 
 export default function FolderDetailScreen({ route = { params: { folder: { _id: '1', name: 'Sample Folder' } } } }) {
   const { colors } = useTheme();
@@ -35,6 +38,39 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
   const [moveToFolderSheetVisible, setMoveToFolderSheetVisible] = useState(false);
   const [resourceToMove, setResourceToMove] = useState(null);
   const [editFolderModalVisible, setEditFolderModalVisible] = useState(false);
+  const [autoOrganiseSheetVisible, setAutoOrganiseSheetVisible] = useState(false);
+
+
+
+  const handleAutoOrganise = async () => {
+    // Validate that there are items to organize in this folder
+    if (folderResources.length === 0) {
+      console.log('No items in folder to organize');
+      return;
+    }
+
+    try {
+      // Call the auto-organize API with a limit of 50 resources
+      await dispatch(autoOrganizeResources(10)).unwrap();
+      
+      console.log('Auto organize completed successfully');
+      
+      // Refetch resources and folders after auto-organize
+      await dispatch(fetchResources()).unwrap();
+      await dispatch(fetchFolders()).unwrap();
+      
+      // Additional refresh after a short delay to ensure backend processing is complete
+      setTimeout(async () => {
+        dispatch(fetchResources());
+        dispatch(fetchFolders());
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Failed to auto organize:', error);
+      // You might want to show an alert or toast here
+      throw error;
+    }
+  };
 
   const handleEdit = (resource) => {
     setSelectedResource(resource);
@@ -133,6 +169,11 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
             <Text style={[styles.itemCount, { color: colors.textSecondary }]}>{folderResources.length} items</Text>
           </View>
         </View>
+        {(folder.name === 'Uncategorised' || folder.name === 'Uncategorized') && folderResources.length > 0 && (
+          <Pressable onPress={() => setAutoOrganiseSheetVisible(true)} style={styles.moreButton}>
+            <Icon name="smart-toy" size={24} color={colors.textPrimary} />
+          </Pressable>
+        )}
         <Pressable onPress={() => setModalVisible(true)} style={styles.moreButton}>
           <Icon name="more-vert" size={24} color={colors.textPrimary} />
         </Pressable>
@@ -275,6 +316,14 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
         onClose={() => setEditFolderModalVisible(false)}
         onSave={handleSaveFolder}
         folder={folder}
+      />
+
+      <AutoOrganiseSheet
+        visible={autoOrganiseSheetVisible}
+        onClose={() => setAutoOrganiseSheetVisible(false)}
+        onOrganise={handleAutoOrganise}
+        folderId={folder._id}
+        totalUncategorised={folderResources.length}
       />
     </SafeAreaView>
   );

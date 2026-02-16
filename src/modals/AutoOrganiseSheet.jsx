@@ -18,13 +18,20 @@ export default function AutoOrganiseSheet({
   onClose, 
   onOrganise,
   selectedCount = 0,
-  totalUncategorised = 0
+  totalUncategorised = 0,
+  folderId = null,
+  tags = []
 }) {
   const { colors } = useTheme();
   const [isOrganising, setIsOrganising] = useState(false);
   const [result, setResult] = useState(null); // 'success' | 'error' | null
   const [resultMessage, setResultMessage] = useState('');
   const slideAnim = React.useRef(new Animated.Value(400)).current;
+
+  // Calculate if there are items to organize
+  const itemsToOrganize = selectedCount > 0 ? selectedCount : totalUncategorised;
+  const hasItemsToOrganize = itemsToOrganize > 0;
+  const isUncategorisedFolder = folderId && !selectedCount && !totalUncategorised;
 
   useEffect(() => {
     if (visible) {
@@ -43,6 +50,13 @@ export default function AutoOrganiseSheet({
   }, [visible, slideAnim]);
 
   const handleOrganise = async () => {
+    // Validate that there are items to organize
+    if (!hasItemsToOrganize && !isUncategorisedFolder) {
+      setResult('error');
+      setResultMessage('No items available to organize. Please add some uncategorised links first.');
+      return;
+    }
+
     setIsOrganising(true);
     setResult(null);
     setResultMessage('');
@@ -150,18 +164,34 @@ export default function AutoOrganiseSheet({
             <View style={styles.infoRow}>
               <Icon name="link" size={20} color={colors.textSecondary} />
               <Text style={[styles.infoText, { color: colors.textPrimary }]}>
-                {selectedCount > 0 
-                  ? `${selectedCount} ${selectedCount === 1 ? 'link' : 'links'} selected`
-                  : `${totalUncategorised} uncategorised ${totalUncategorised === 1 ? 'link' : 'links'}`
+                {!hasItemsToOrganize && !isUncategorisedFolder
+                  ? 'No items available to organize'
+                  : tags && tags.length === 0
+                    ? 'Items with no tags available to organize'
+                    : selectedCount > 0 
+                      ? `${selectedCount} ${selectedCount === 1 ? 'link' : 'links'} selected`
+                      : isUncategorisedFolder
+                        ? 'Items in this uncategorised folder'
+                        : `${totalUncategorised} uncategorised ${totalUncategorised === 1 ? 'link' : 'links'}`
                 }
               </Text>
             </View>
-            <View style={styles.infoRow}>
-              <Icon name="auto-awesome" size={20} color={colors.textSecondary} />
-              <Text style={[styles.infoText, { color: colors.textPrimary }]}>
-                AI will suggest folders and tags
-              </Text>
-            </View>
+            {(hasItemsToOrganize || isUncategorisedFolder) && (
+              <View style={styles.infoRow}>
+                <Icon name="auto-awesome" size={20} color={colors.textSecondary} />
+                <Text style={[styles.infoText, { color: colors.textPrimary }]}>
+                  AI will suggest folders and tags
+                </Text>
+              </View>
+            )}
+            {!hasItemsToOrganize && !isUncategorisedFolder && (
+              <View style={styles.infoRow}>
+                <Icon name="info" size={20} color={colors.textSecondary} />
+                <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                  Add some uncategorised links to get started
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Features */}
@@ -187,7 +217,7 @@ export default function AutoOrganiseSheet({
           <View style={styles.actions}>
             <Pressable
               onPress={handleOrganise}
-              disabled={isOrganising || result === 'success'}
+              disabled={isOrganising || result === 'success' || (!hasItemsToOrganize && !isUncategorisedFolder)}
               style={({ pressed }) => [
                 pressed && { opacity: 0.8 }
               ]}
@@ -196,13 +226,15 @@ export default function AutoOrganiseSheet({
                 colors={
                   result === 'success' 
                     ? ['#10B981', '#059669'] 
-                    : ['#FFD700', '#FDB931', '#E5E4E2']
+                    : (!hasItemsToOrganize && !isUncategorisedFolder)
+                      ? ['#9CA3AF', '#6B7280']
+                      : ['#FFD700', '#FDB931', '#E5E4E2']
                 }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={[
                   styles.organiseButton,
-                  (isOrganising || result) && styles.organiseButtonDisabled
+                  (isOrganising || result || (!hasItemsToOrganize && !isUncategorisedFolder)) && styles.organiseButtonDisabled
                 ]}
               >
                 {isOrganising ? (
@@ -214,6 +246,11 @@ export default function AutoOrganiseSheet({
                   <>
                     <Icon name="check-circle" size={20} color="#FFFFFF" />
                     <Text style={[styles.organiseButtonText, { color: '#FFFFFF' }]}>Success!</Text>
+                  </>
+                ) : (!hasItemsToOrganize && !isUncategorisedFolder) ? (
+                  <>
+                    <Icon name="info" size={20} color="#FFFFFF" />
+                    <Text style={[styles.organiseButtonText, { color: '#FFFFFF' }]}>No Items Available</Text>
                   </>
                 ) : (
                   <>
