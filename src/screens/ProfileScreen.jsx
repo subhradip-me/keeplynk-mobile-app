@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable, Switch, Alert } from 'react-native';
-import { Colors, Spacing, BorderRadius, FontSizes, FontWeights, Shadows } from '../constants/theme';
+import { Spacing, BorderRadius, FontSizes, FontWeights, Shadows } from '../constants/theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../features/auth/authHooks';

@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders';
 import { useTheme } from '../features/theme';
-import { makeResourceFavorite, moveResourceToTrash, fetchResources } from '../features/resources/resourceThunk';
-import { fetchFolders } from '../features/folders/folderThunk';
+import { makeResourceFavorite, moveResourceToTrash } from '../features/resources/resourceThunk';
 import { autoOrganizeResources } from '../features/organise';
 import { useDispatch } from 'react-redux';
 import LinkItem from '../components/LinkItem';
@@ -22,14 +21,46 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const { folder: routeFolder } = route.params;
-  const { resources = [], updateResource } = useResources();
-  const { folders, updateFolder: updateFolderAction } = useFolders();
+  const { resources = [], updateResource, fetchResources: fetchResourcesHook } = useResources();
+  const { folders, updateFolder: updateFolderAction, moveToTrash, fetchFolders: fetchFoldersHook } = useFolders();
 
   // Get the live folder from Redux state for real-time updates
-  const folder = folders.find(f => f._id === routeFolder._id) || routeFolder;
+  // Filter out trashed folders from the main list
+  const activeFolders = folders?.filter(f => !f.isTrashed) || [];
+  const folder = activeFolders.find(f => f._id === routeFolder._id) || routeFolder;
 
-  // Get resources by folder (excluding trashed)
-  const folderResources = resources.filter(r => r.folderId === folder._id && !r.isTrashed);
+  // Get resources by folder (excluding trashed) - handle multiple folder field patterns
+  const folderResources = resources.filter(r => {
+    if (r.isTrashed) return false;
+    
+    // Handle different folder reference patterns
+    const resourceFolderId = r.folderId || r.folder?._id || r.folder;
+    const folderIdToMatch = folder._id;
+    
+    return resourceFolderId === folderIdToMatch;
+  });
+
+  // Add useEffect to refresh folders when screen is focused to ensure real-time updates
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Refresh folders and resources when returning to screen
+      fetchFoldersHook();
+      fetchResourcesHook();
+    });
+    return unsubscribe;
+  }, [navigation, fetchFoldersHook, fetchResourcesHook]);
+
+  // Initial data fetch
+  React.useEffect(() => {
+    fetchResourcesHook();
+  }, [fetchResourcesHook]);
+  
+  // Additional effect to refresh when folder changes
+  React.useEffect(() => {
+    if (folder._id) {
+      fetchResourcesHook();
+    }
+  }, [folder._id, fetchResourcesHook]);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
@@ -55,14 +86,14 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
       
       console.log('Auto organize completed successfully');
       
-      // Refetch resources and folders after auto-organize
-      await dispatch(fetchResources()).unwrap();
-      await dispatch(fetchFolders()).unwrap();
+      // Refetch resources and folders after auto-organize using hooks
+      await fetchResourcesHook();
+      await fetchFoldersHook();
       
       // Additional refresh after a short delay to ensure backend processing is complete
       setTimeout(async () => {
-        dispatch(fetchResources());
-        dispatch(fetchFolders());
+        fetchResourcesHook();
+        fetchFoldersHook();
       }, 2000);
       
     } catch (error) {
@@ -81,7 +112,7 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
     try {
       await updateResource(selectedResource._id, updatedResource);
       // Auto-refresh resources after update
-      await dispatch(fetchResources());
+      await fetchResourcesHook();
       setEditModalVisible(false);
       setSelectedResource(null);
     } catch (error) {
@@ -102,7 +133,7 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
     try {
       await dispatch(moveResourceToTrash(resource._id)).unwrap();
       // Silently refetch in background to get properly populated tags
-      dispatch(fetchResources());
+      fetchResourcesHook();
     } catch (error) {
       console.error('Failed to move resource to trash:', error);
     }
@@ -114,7 +145,7 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
     try {
       await updateResource(resourceToMove._id, { folderId });
       // Auto-refresh resources after moving
-      await dispatch(fetchResources());
+      await fetchResourcesHook();
       setMoveToFolderSheetVisible(false);
       setResourceToMove(null);
     } catch (error) {
@@ -134,18 +165,42 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
     }
   };
 
+  const handleDeleteFolder = async () => {
+    // Prevent deletion of Uncategorised folder
+    if (folder.name === 'Uncategorised' || folder.name === 'Uncategorized') {
+      return;
+    }
+    
+    try {
+      // Soft delete the folder
+      await moveToTrash(folder._id);
+      
+      // Refresh folders to ensure backend state is synced
+      await fetchFoldersHook();
+      
+      // Navigate back after successful deletion and state sync
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to delete folder. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  // Check if folder can be deleted
+  const canDeleteFolder = folder.name !== 'Uncategorised' && folder.name !== 'Uncategorized';
+
   const menuItems = [
     { icon: 'edit', label: 'Edit Folder', action: () => setEditFolderModalVisible(true) },
     { icon: 'share', label: 'Share', action: () => console.log('Share') },
-    { icon: 'delete', label: 'Delete Folder', action: () => console.log('Delete Folder'), danger: true },
+    ...(canDeleteFolder ? [{ icon: 'delete', label: 'Delete Folder', action: handleDeleteFolder, danger: true }] : []),
   ];
 
   const closeModal = () => {
     setModalVisible(false);
-  };
-
-  const handleLinkPress = (resource) => {
-    console.log('Resource pressed:', resource);
   };
 
   const formatDate = (dateString) => {
@@ -155,6 +210,12 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
+      {!folder ? (
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading folder...</Text>
+        </View>
+      ) : (
+        <>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.border }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -204,7 +265,7 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
                 url={resource.url}
                 description={resource.description}
                 tags={resource.tags}
-                folder={resource.folderName}
+                folder={folder.name}
                 isFavorite={resource.isFavorite}
                 type={resource.type}
                 onPress={() => setSelectedResource(resource) || setPreviewModalVisible(true)}
@@ -325,6 +386,8 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
         folderId={folder._id}
         totalUncategorised={folderResources.length}
       />
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -332,6 +395,14 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
   },
   header: {
     flexDirection: 'row',

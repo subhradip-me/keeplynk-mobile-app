@@ -5,6 +5,9 @@ import {
     createFolder,
     updateFolder,
     deleteFolder,
+    trashFolder,
+    restoreFolder,
+    hardDeleteFolder,
 } from './folderThunk';
 
 const folderSlice = createSlice({
@@ -38,7 +41,7 @@ const folderSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
-            
+
             // Fetch Folder By ID
             .addCase(fetchFolderById.pending, (state) => {
                 state.loading = true;
@@ -52,7 +55,7 @@ const folderSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
-            
+
             // Create Folder
             .addCase(createFolder.pending, (state) => {
                 state.loading = true;
@@ -66,7 +69,7 @@ const folderSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
-            
+
             // Update Folder
             .addCase(updateFolder.pending, (state) => {
                 state.loading = true;
@@ -86,8 +89,8 @@ const folderSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
-            
-            // Delete Folder
+
+            // Delete Folder (legacy hard delete)
             .addCase(deleteFolder.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -100,6 +103,63 @@ const folderSlice = createSlice({
                 }
             })
             .addCase(deleteFolder.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+
+            // Soft Delete (Trash) Folder
+            .addCase(trashFolder.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(trashFolder.fulfilled, (state, action) => {
+                state.loading = false;
+                const index = state.items.findIndex(f => f._id === action.payload._id);
+                if (index !== -1) {
+                    state.items[index] = action.payload;
+                }
+                if (state.currentFolder?._id === action.payload._id) {
+                    state.currentFolder = null;
+                }
+            })
+            .addCase(trashFolder.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+
+            // Restore Folder from Trash
+            .addCase(restoreFolder.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(restoreFolder.fulfilled, (state, action) => {
+                state.loading = false;
+                const index = state.items.findIndex(f => f._id === action.payload._id);
+                if (index !== -1) {
+                    state.items[index] = action.payload;
+                }
+                if (state.currentFolder?._id === action.payload._id) {
+                    state.currentFolder = action.payload;
+                }
+            })
+            .addCase(restoreFolder.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+
+            // Hard Delete Folder (permanent)
+            .addCase(hardDeleteFolder.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(hardDeleteFolder.fulfilled, (state, action) => {
+                state.loading = false;
+                state.items = state.items.filter(f => f._id !== action.payload);
+                if (state.currentFolder?._id === action.payload) {
+                    state.currentFolder = null;
+                }
+            })
+            .addCase(hardDeleteFolder.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, Modal, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useFolders } from '../features/folders';
 import { useTheme } from '../features/theme';
 import NewFolderModal from '../modals/NewFolderModal';
@@ -17,6 +17,13 @@ export default function FoldersScreen() {
   useEffect(() => {
     fetchFolders();
   }, [fetchFolders]);
+
+  // Refresh folders when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchFolders();
+    }, [fetchFolders])
+  );
 
   const menuItems = [
     { icon: 'add', label: 'New Folder', action: () => setNewFolderModalVisible(true) },
@@ -117,7 +124,7 @@ export default function FoldersScreen() {
 
       {/* Folder List */}
       <FlatList
-        data={folders}
+        data={folders?.filter(f => !f.isTrashed) || []}
         keyExtractor={(item) => item._id}
         renderItem={renderFolderItem}
         contentContainerStyle={styles.listContent}

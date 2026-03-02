@@ -6,6 +6,9 @@ import {
     createFolder as createFolderAction,
     updateFolder as updateFolderAction,
     deleteFolder as deleteFolderAction,
+    trashFolder as trashFolderAction,
+    restoreFolder as restoreFolderAction,
+    hardDeleteFolder as hardDeleteFolderAction,
 } from './folderThunk';
 import { clearError, setCurrentFolder } from './folderSlice';
 import {
@@ -28,6 +31,9 @@ export const useFolders = () => {
     const createFolder = useCallback((folderData) => dispatch(createFolderAction(folderData)), [dispatch]);
     const updateFolder = useCallback((id, folderData) => dispatch(updateFolderAction({ id, folderData })), [dispatch]);
     const deleteFolder = useCallback((id) => dispatch(deleteFolderAction(id)), [dispatch]);
+    const moveToTrash = useCallback((id) => dispatch(trashFolderAction(id)), [dispatch]);
+    const restoreFromTrash = useCallback((id) => dispatch(restoreFolderAction(id)), [dispatch]);
+    const permanentDelete = useCallback((id) => dispatch(hardDeleteFolderAction(id)), [dispatch]);
     const setCurrentFolderCallback = useCallback((folder) => dispatch(setCurrentFolder(folder)), [dispatch]);
     const clearErrorCallback = useCallback(() => dispatch(clearError()), [dispatch]);
 
@@ -41,6 +47,13 @@ export const useFolders = () => {
         createFolder,
         updateFolder,
         deleteFolder,
+        moveToTrash,
+        restoreFromTrash,
+        permanentDelete,
+        // Aliases for convenience
+        trashFolder: moveToTrash,
+        restoreFolder: restoreFromTrash,
+        hardDeleteFolder: permanentDelete,
         setCurrentFolder: setCurrentFolderCallback,
         clearError: clearErrorCallback,
     };

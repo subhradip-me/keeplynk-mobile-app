@@ -11,10 +11,10 @@ const LinkItem = ({ title, url, description, tags = [], folder, isFavorite, type
   const moreButtonRef = useRef(null);
   const windowHeight = Dimensions.get('window').height;
 
-  const getFavicon = (url) => {
-    if (!url) return null;
+  const getFavicon = (urlParam) => {
+    if (!urlParam) return null;
     try {
-      const domain = new URL(url).hostname;
+      const domain = new URL(urlParam).hostname;
       return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
     } catch {
       return null;

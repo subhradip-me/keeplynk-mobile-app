@@ -462,7 +462,7 @@ export default function AddResourceModal({ visible, onClose, onSave, initialUrl 
                         )}
                       </Pressable>
                       
-                      {folders.map((folder) => {
+                      {folders.filter(f => !f.isTrashed).map((folder) => {
                         const isSelected = selectedFolderId === (folder._id || folder.id);
                         return (
                           <Pressable

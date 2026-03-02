@@ -38,6 +38,15 @@ export default function SearchScreen() {
   const loading = resourcesHook?.loading || false;
   const updateResource = resourcesHook?.updateResource;
 
+  // Create a folder lookup map
+  const folderMap = useMemo(() => {
+    const map = {};
+    folders.forEach(folder => {
+      map[folder._id] = { name: folder.name, color: folder.color };
+    });
+    return map;
+  }, [folders]);
+
   // Fetch data on mount
   useEffect(() => {
     if (resourcesHook?.fetchResources) resourcesHook.fetchResources();
@@ -85,7 +94,7 @@ export default function SearchScreen() {
     if (query.length > 0) {
       // Find folders matching the search query
       const matchingFolders = folders.filter(f =>
-        f.name?.toLowerCase().includes(query)
+        !f.isTrashed && f.name?.toLowerCase().includes(query)
       );
       const matchingFolderIds = matchingFolders.map(f => f._id);
 
@@ -403,7 +412,7 @@ export default function SearchScreen() {
                     url={resource.url}
                     description={resource.description}
                     tags={resource.tags}
-                    folder={resource.folder || resource.folderName}
+                    folder={resource.folderName || (resource.folderId ? folderMap[resource.folderId] : null)}
                     isFavorite={resource.isFavorite}
                     type={resource.type}
                     onPress={() => handlePreview(resource)}
@@ -440,7 +449,7 @@ export default function SearchScreen() {
                   </Pressable>
                   <Text style={[styles.selectionHeaderTitle, { color: colors.textPrimary }]}>Select Folder</Text>
                 </View>
-                {folders.map((folder, index) => (
+                {folders.filter(f => !f.isTrashed).map((folder, index) => (
                   <Pressable
                     key={folder._id || `folder-${index}`}
                     style={[
@@ -521,7 +530,7 @@ export default function SearchScreen() {
                           url={resource.url}
                           description={resource.description}
                           tags={resource.tags}
-                          folder={resource.folder || resource.folderName}
+                          folder={resource.folderName || (resource.folderId ? folderMap[resource.folderId] : null)}
                           isFavorite={resource.isFavorite}
                           type={resource.type}
                           onPress={() => handlePreview(resource)}

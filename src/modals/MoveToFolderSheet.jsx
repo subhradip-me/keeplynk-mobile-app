@@ -45,6 +45,7 @@ export default function MoveToFolderSheet({
   }, [visible, slideAnim]);
 
   const filteredFolders = folders.filter(folder => 
+    !folder.isTrashed && 
     folder.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

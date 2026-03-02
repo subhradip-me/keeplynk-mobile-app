@@ -50,7 +50,9 @@ class ApiService {
 
   // Resources
   async getResources(params = {}) {
-    const response = await apiClient.get(API_ENDPOINTS.RESOURCES.BASE, { params });
+    // Always populate folder information with resources
+    const populateParams = { ...params, populate: 'folderId' };
+    const response = await apiClient.get(API_ENDPOINTS.RESOURCES.BASE, { params: populateParams });
     return response.data;
   }
 
@@ -122,6 +124,16 @@ class ApiService {
   async updateFolder(id, folderData) {
     const formattedData = formatFolderData(folderData);
     const response = await apiClient.put(API_ENDPOINTS.FOLDERS.BY_ID(id), formattedData);
+    return response.data;
+  }
+
+  async moveToTrashFolder(id) {
+    const response = await apiClient.patch(`${API_ENDPOINTS.FOLDERS.BY_ID(id)}/trash`);
+    return response.data;
+  }
+
+  async restoreFromTrashFolder(id) {
+    const response = await apiClient.patch(`${API_ENDPOINTS.FOLDERS.BY_ID(id)}/restore`);
     return response.data;
   }
 

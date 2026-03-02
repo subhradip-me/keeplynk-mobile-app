@@ -66,3 +66,42 @@ export const deleteFolder = createAsyncThunk(
         }
     }
 );
+
+// Soft delete (move to trash)
+export const trashFolder = createAsyncThunk(
+    'folders/trashFolder',
+    async (id, { rejectWithValue }) => {
+        try {
+            const data = await foldersAPI.moveToTrash(id);
+            return data.data || data;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+// Restore folder from trash
+export const restoreFolder = createAsyncThunk(
+    'folders/restoreFolder',
+    async (id, { rejectWithValue }) => {
+        try {
+            const data = await foldersAPI.restoreFromTrash(id);
+            return data.data || data;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+// Permanently delete folder
+export const hardDeleteFolder = createAsyncThunk(
+    'folders/hardDeleteFolder',
+    async (id, { rejectWithValue }) => {
+        try {
+            await foldersAPI.delete(id);
+            return id;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);

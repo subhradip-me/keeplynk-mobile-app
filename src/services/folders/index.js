@@ -21,6 +21,16 @@ export const foldersAPI = {
     const response = await apiService.updateFolder(id, data);
     return response;
   },
+  
+  moveToTrash: async (id) => {
+    const response = await apiService.moveToTrashFolder(id);
+    return response;
+  },
+  restoreFromTrash: async (id) => {
+    const response = await apiService.restoreFromTrashFolder(id);
+    return response;
+  },
+
   delete: async (id) => {
     const response = await apiService.deleteFolder(id);
     return response;

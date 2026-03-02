@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, Alert, Modal, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
@@ -9,6 +9,7 @@ import LinkItem from '../components/LinkItem';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
 import { restoreResourceFromTrash, deleteResource, fetchResources } from '../features/resources/resourceThunk';
+import { fetchFolders } from '../features/folders/folderThunk';
 
 // Simple EmptyState component for trash
 const EmptyState = ({ icon, title, message, colors }) => (
@@ -24,13 +25,27 @@ export default function TrashScreen() {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const { resources = [] } = useResources();
-  const { folders } = useFolders();
+  const { folders, restoreFromTrash, permanentDelete } = useFolders();
   const [showActionsModal, setShowActionsModal] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showRestoreAllModal, setShowRestoreAllModal] = useState(false);
   const [showEmptyTrashModal, setShowEmptyTrashModal] = useState(false);
+  const [showFolderActionsModal, setShowFolderActionsModal] = useState(false);
+  const [showRestoreFolderModal, setShowRestoreFolderModal] = useState(false);
+  const [showDeleteFolderModal, setShowDeleteFolderModal] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
+  const [selectedFolder, setSelectedFolder] = useState(null);
+  
+  // Real-time updates - refresh data when screen is focused
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Refresh data when screen comes into focus
+      // This ensures real-time updates when items are moved to/from trash
+    });
+    
+    return unsubscribe;
+  }, [navigation]);
   
   // Create a folder lookup map
   const folderMap = useMemo(() => {
@@ -41,15 +56,106 @@ export default function TrashScreen() {
     return map;
   }, [folders]);
   
-  // Filter deleted resources
-  const trashedResources = useMemo(() => 
-    resources.filter(r => r.isTrashed), 
-    [resources]
-  );
+  // Filter deleted resources and folders with error handling
+  const trashedResources = useMemo(() => {
+    try {
+      return resources?.filter(r => r?.isTrashed === true) || [];
+    } catch (error) {
+      console.error('Error filtering trashed resources:', error);
+      return [];
+    }
+  }, [resources]);
+
+  const trashedFolders = useMemo(() => {
+    try {
+      return folders?.filter(f => f?.isTrashed === true) || [];
+    } catch (error) {
+      console.error('Error filtering trashed folders:', error);
+      return [];
+    }
+  }, [folders]);
+
+  const totalTrashedItems = (trashedResources?.length || 0) + (trashedFolders?.length || 0);
+
+  // Combine trashed resources and folders for display with error handling
+  const trashedItems = useMemo(() => {
+    try {
+      const combined = [
+        ...(trashedFolders?.map(folder => ({ ...folder, itemType: 'folder' })) || []),
+        ...(trashedResources?.map(resource => ({ ...resource, itemType: 'resource' })) || [])
+      ];
+      return combined.sort((a, b) => {
+        try {
+          const aDate = new Date(a.updatedAt || a.createdAt || 0);
+          const bDate = new Date(b.updatedAt || b.createdAt || 0);
+          return bDate - aDate;
+        } catch (error) {
+          console.error('Error sorting trashed items:', error);
+          return 0;
+        }
+      });
+    } catch (error) {
+      console.error('Error combining trashed items:', error);
+      return [];
+    }
+  }, [trashedFolders, trashedResources]);
 
   const handleRestore = useCallback(async (resource) => {
     setSelectedResource(resource);
     setShowRestoreModal(true);
+  }, []);
+
+  const handleRestoreFolder = useCallback(async (folder) => {
+    setSelectedFolder(folder);
+    setShowRestoreFolderModal(true);
+  }, []);
+
+  const confirmRestoreFolder = useCallback(async () => {
+    if (!selectedFolder) return;
+    
+    setShowRestoreFolderModal(false);
+    try {
+      await restoreFromTrash(selectedFolder._id);
+      // Refresh folders to sync backend state
+      await dispatch(fetchFolders());
+      // Real-time update - remove from trash list
+      setSelectedFolder(null);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to restore folder');
+      console.error('Failed to restore folder:', error);
+    }
+  }, [restoreFromTrash, selectedFolder, dispatch]);
+
+  const handlePermanentDeleteFolder = useCallback(async (folder) => {
+    // Prevent permanent deletion of Uncategorised folder
+    if (folder.name === 'Uncategorised' || folder.name === 'Uncategorized') {
+      Alert.alert('Cannot Delete', 'The Uncategorised folder cannot be permanently deleted');
+      return;
+    }
+    
+    setSelectedFolder(folder);
+    setShowDeleteFolderModal(true);
+  }, []);
+
+  const confirmDeleteFolder = useCallback(async () => {
+    if (!selectedFolder) return;
+    
+    setShowDeleteFolderModal(false);
+    try {
+      await permanentDelete(selectedFolder._id);
+      // Refresh folders to sync backend state
+      await dispatch(fetchFolders());
+      // Real-time update - remove from trash list
+      setSelectedFolder(null);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to permanently delete folder');
+      console.error('Failed to permanently delete folder:', error);
+    }
+  }, [permanentDelete, selectedFolder, dispatch]);
+
+  const handleFolderActions = useCallback((folder) => {
+    setSelectedFolder(folder);
+    setShowFolderActionsModal(true);
   }, []);
 
   const confirmRestore = useCallback(async () => {
@@ -85,65 +191,124 @@ export default function TrashScreen() {
   }, [dispatch, selectedResource]);
 
   const handleEmptyTrash = useCallback(async () => {
-    if (trashedResources.length === 0) return;
+    if (totalTrashedItems === 0) return;
     setShowEmptyTrashModal(true);
-  }, [trashedResources]);
+  }, [totalTrashedItems]);
 
   const confirmEmptyTrash = useCallback(async () => {
     setShowEmptyTrashModal(false);
     try {
-      await Promise.all(
-        trashedResources.map(resource => 
-          dispatch(deleteResource(resource._id)).unwrap()
-        )
+      const resourcePromises = trashedResources.map(resource => 
+        dispatch(deleteResource(resource._id)).unwrap()
       );
+      const folderPromises = trashedFolders.map(folder => 
+        permanentDelete(folder._id)
+      );
+      await Promise.all([...resourcePromises, ...folderPromises]);
     } catch (error) {
       Alert.alert('Error', 'Failed to empty trash');
       console.error('Failed to empty trash:', error);
     }
-  }, [trashedResources, dispatch]);
+  }, [trashedResources, trashedFolders, dispatch, permanentDelete]);
 
   const handleRestoreAll = useCallback(async () => {
-    if (trashedResources.length === 0) return;
+    if (totalTrashedItems === 0) return;
     setShowRestoreAllModal(true);
-  }, [trashedResources]);
+  }, [totalTrashedItems]);
 
   const confirmRestoreAll = useCallback(async () => {
     setShowRestoreAllModal(false);
     try {
-      await Promise.all(
-        trashedResources.map(resource => 
-          dispatch(restoreResourceFromTrash(resource._id)).unwrap()
-        )
+      const resourcePromises = trashedResources.map(resource => 
+        dispatch(restoreResourceFromTrash(resource._id)).unwrap()
       );
+      const folderPromises = trashedFolders.map(folder => 
+        restoreFromTrash(folder._id)
+      );
+      await Promise.all([...resourcePromises, ...folderPromises]);
       dispatch(fetchResources());
     } catch (error) {
-      Alert.alert('Error', 'Failed to restore all resources');
-      console.error('Failed to restore all resources:', error);
+      Alert.alert('Error', 'Failed to restore all items');
+      console.error('Failed to restore all items:', error);
     }
-  }, [trashedResources, dispatch]);
+  }, [trashedResources, trashedFolders, dispatch, restoreFromTrash]);
 
-  const renderTrashItem = useCallback(({ item }) => (
-    <LinkItem
-      title={item.title}
-      url={item.url}
-      description={item.description}
-      tags={item.tags}
-      folder={item.folderName || (item.folderId ? folderMap[item.folderId] : null)}
-      isFavorite={item.isFavorite}
-      type={item.type}
-      onPress={() => {}} // No action on press in trash
-      onRestore={() => handleRestore(item)} // Restore action
-      onDelete={() => handlePermanentDelete(item)} // Permanent delete action
-      // Disable other actions in trash
-      onEdit={null}
-      onMoveToFolder={null}
-      onToggleFavorite={null}
-      showOnlyTrashActions={true} // Flag to show only restore and delete actions
-    />
-  ), [handleRestore, handlePermanentDelete, folderMap]);
+  const renderTrashItem = useCallback(({ item }) => {
+    if (item.itemType === 'folder') {
+      const isUncategorised = item.name === 'Uncategorised' || item.name === 'Uncategorized';
+      
+      return (
+        <Pressable 
+          style={({ pressed }) => [
+            styles.folderItem,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+            pressed && { backgroundColor: colors.surfaceHover }
+          ]}
+          onPress={() => {}} // No navigation in trash
+        >
+          <View style={[styles.iconContainer, { backgroundColor: colors.backgroundTertiary }]}>  
+            <Icon name={item.icon || "folder"} size={20} color={item.color || colors.textSecondary} />
+          </View>
+          
+          <View style={styles.folderContent}>
+            <Text style={[styles.folderName, { color: colors.textPrimary }]} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={[styles.folderDescription, { color: colors.textSecondary }]} numberOfLines={1}>
+              {item.description || 'No description available'}
+              {isUncategorised && ' • Cannot be permanently deleted'}
+            </Text>
+            <View style={styles.metaRow}>
+              <Text style={[styles.metaText, { color: colors.textTertiary }]}>Folder in trash</Text>
+              <Text style={[styles.metaDot, { color: colors.textTertiary }]}>•</Text>
+              <Text style={[styles.metaText, { color: colors.textTertiary }]}>Deleted</Text>
+            </View>
+          </View>
 
-  const keyExtractor = useCallback((item) => item._id || item.id || String(item.url), []);
+          <Pressable
+            onPress={() => handleFolderActions(item)}
+            style={styles.folderActionButton}
+          >
+            <Icon name="more-vert" size={20} color={colors.textTertiary} />
+          </Pressable>
+        </Pressable>
+      );
+    }
+    
+    return (
+      <LinkItem
+        title={item.title}
+        url={item.url}
+        description={item.description}
+        tags={item.tags}
+        folder={item.folderName || (item.folderId ? folderMap[item.folderId] : null)}
+        isFavorite={item.isFavorite}
+        type={item.type}
+        onPress={() => {}} // No action on press in trash
+        onRestore={() => handleRestore(item)} // Restore action
+        onDelete={() => handlePermanentDelete(item)} // Permanent delete action
+        // Disable other actions in trash
+        onEdit={null}
+        onMoveToFolder={null}
+        onToggleFavorite={null}
+        showOnlyTrashActions={true} // Flag to show only restore and delete actions
+      />
+    );
+  }, [handleRestore, handlePermanentDelete, handleFolderActions, folderMap, colors]);
+
+  const keyExtractor = useCallback((item, index) => {
+    try {
+      if (!item) return `empty-${index}`;
+      
+      if (item.itemType === 'folder') {
+        return `folder-${item._id || item.id || index}`;
+      }
+      return `resource-${item._id || item.id || item.url || index}`;
+    } catch (error) {
+      console.error('Error extracting key:', error);
+      return `error-${index}-${Date.now()}`;
+    }
+  }, []);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
@@ -158,7 +323,7 @@ export default function TrashScreen() {
           </View>
           <View style={styles.headerText}>
             <Text style={[styles.title, { color: colors.textPrimary }]}>Trash</Text>
-            <Text style={[styles.itemCount, { color: colors.textSecondary }]}>{trashedResources.length} items</Text>
+            <Text style={[styles.itemCount, { color: colors.textSecondary }]}>{totalTrashedItems} items</Text>
           </View>
         </View>
         {trashedResources.length > 0 && (
@@ -172,7 +337,7 @@ export default function TrashScreen() {
       </View>
 
       {/* Trash List */}
-      {trashedResources.length === 0 ? (
+      {trashedItems.length === 0 ? (
         <EmptyState
           icon="delete-outline"
           title="Trash is Empty"
@@ -181,7 +346,7 @@ export default function TrashScreen() {
         />
       ) : (
         <FlatList
-          data={trashedResources}
+          data={trashedItems}
           renderItem={renderTrashItem}
           keyExtractor={keyExtractor}
           contentContainerStyle={styles.list}
@@ -398,7 +563,7 @@ export default function TrashScreen() {
                 <Icon name="restore" size={32} color="#10B981" />
               </View>
               <Text style={[styles.confirmationMessage, { color: colors.textPrimary }]}>
-                Restore all {trashedResources.length} items from trash?
+                Restore all {totalTrashedItems} items from trash?
               </Text>
               <Text style={[styles.confirmationSubMessage, { color: colors.textSecondary }]}>
                 They will be moved back to their original folders.
@@ -455,7 +620,7 @@ export default function TrashScreen() {
                 <Icon name="delete-forever" size={32} color="#EF4444" />
               </View>
               <Text style={[styles.confirmationMessage, { color: colors.textPrimary }]}>
-                Permanently delete all {trashedResources.length} items?
+                Permanently delete all {totalTrashedItems} items?
               </Text>
               <Text style={[styles.confirmationSubMessage, { color: colors.textSecondary }]}>
                 This action cannot be undone.
@@ -476,6 +641,203 @@ export default function TrashScreen() {
               >
                 <Icon name="delete-forever" size={18} color="#FFFFFF" />
                 <Text style={styles.dangerButtonText}>Empty Trash</Text>
+              </Pressable>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Folder Actions Modal */}
+      <Modal
+        visible={showFolderActionsModal}
+        transparent={true}
+        animationType="none"
+        onRequestClose={() => setShowFolderActionsModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowFolderActionsModal(false)}
+        >
+          <View style={styles.dropdownContainer}>
+            <View style={[styles.dropdownContent, { backgroundColor: colors.backgroundTertiary, shadowColor: colors.shadow }]}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.dropdownOption,
+                  pressed && { backgroundColor: colors.surfaceHover }
+                ]}
+                onPress={() => {
+                  setShowFolderActionsModal(false);
+                  handleRestoreFolder(selectedFolder);
+                }}
+              >
+                <Icon name="restore" size={20} color={colors.primary} />
+                <Text style={[styles.dropdownOptionText, { color: colors.textPrimary }]}>Restore Folder</Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.dropdownOption,
+                  styles.dropdownOptionLast,
+                  pressed && { backgroundColor: colors.surfaceHover }
+                ]}
+                onPress={() => {
+                  setShowFolderActionsModal(false);
+                  handlePermanentDeleteFolder(selectedFolder);
+                }}
+                disabled={selectedFolder?.name === 'Uncategorised' || selectedFolder?.name === 'Uncategorized'}
+              >
+                <Icon 
+                  name="delete-forever" 
+                  size={20} 
+                  color={
+                    selectedFolder?.name === 'Uncategorised' || selectedFolder?.name === 'Uncategorized' 
+                      ? colors.textDisabled 
+                      : colors.error
+                  } 
+                />
+                <Text style={[
+                  styles.dropdownOptionText, 
+                  { color: 
+                    selectedFolder?.name === 'Uncategorised' || selectedFolder?.name === 'Uncategorized' 
+                      ? colors.textDisabled 
+                      : colors.error
+                  }
+                ]}>
+                  Delete Forever
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Restore Folder Confirmation Modal */}
+      <Modal
+        visible={showRestoreFolderModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowRestoreFolderModal(false);
+          setSelectedFolder(null);
+        }}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            setShowRestoreFolderModal(false);
+            setSelectedFolder(null);
+          }}
+        >
+          <View
+            style={[styles.confirmationSheet, { backgroundColor: colors.backgroundTertiary }]}
+            onStartShouldSetResponder={() => true}
+          >
+            {/* Handle */}
+            <View style={[styles.handle, { backgroundColor: colors.textPrimary }]} />
+
+            {/* Header */}
+            <View style={[styles.confirmationHeader, { borderBottomColor: colors.divider }]}>
+              <Text style={[styles.confirmationHeaderTitle, { color: colors.textPrimary }]}>Restore Folder</Text>
+            </View>
+
+            {/* Content */}
+            <View style={styles.confirmationContent}>
+              <View style={[styles.confirmationIcon, { backgroundColor: '#ECFDF5' }]}>
+                <Icon name="restore" size={32} color="#10B981" />
+              </View>
+              <Text style={[styles.confirmationMessage, { color: colors.textPrimary }]}>
+                Restore "{selectedFolder?.name}" from trash?
+              </Text>
+              <Text style={[styles.confirmationSubMessage, { color: colors.textSecondary }]}>
+                The folder and all its contents will be restored.
+              </Text>
+            </View>
+            
+            {/* Actions */}
+            <View style={styles.confirmationActions}>
+              <Pressable
+                style={[styles.confirmationButton, styles.cancelButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => {
+                  setShowRestoreFolderModal(false);
+                  setSelectedFolder(null);
+                }}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.confirmationButton, styles.primaryButton]}
+                onPress={confirmRestoreFolder}
+              >
+                <Icon name="restore" size={18} color="#FFFFFF" />
+                <Text style={styles.primaryButtonText}>Restore</Text>
+              </Pressable>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Delete Folder Confirmation Modal */}
+      <Modal
+        visible={showDeleteFolderModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowDeleteFolderModal(false);
+          setSelectedFolder(null);
+        }}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            setShowDeleteFolderModal(false);
+            setSelectedFolder(null);
+          }}
+        >
+          <View
+            style={[styles.confirmationSheet, { backgroundColor: colors.backgroundTertiary }]}
+            onStartShouldSetResponder={() => true}
+          >
+            {/* Handle */}
+            <View style={[styles.handle, { backgroundColor: colors.textPrimary }]} />
+
+            {/* Header */}
+            <View style={[styles.confirmationHeader, { borderBottomColor: colors.divider }]}>
+              <Text style={[styles.confirmationHeaderTitle, { color: colors.textPrimary }]}>Delete Forever</Text>
+            </View>
+
+            {/* Content */}
+            <View style={styles.confirmationContent}>
+              <View style={[styles.confirmationIcon, { backgroundColor: '#FEF2F2' }]}>
+                <Icon name="delete-forever" size={32} color="#EF4444" />
+              </View>
+              <Text style={[styles.confirmationMessage, { color: colors.textPrimary }]}>
+                Permanently delete "{selectedFolder?.name}"?
+              </Text>
+              <Text style={[styles.confirmationSubMessage, { color: colors.textSecondary }]}>
+                This folder and all its contents will be permanently deleted. This action cannot be undone.
+              </Text>
+            </View>
+            
+            {/* Actions */}
+            <View style={styles.confirmationActions}>
+              <Pressable
+                style={[styles.confirmationButton, styles.cancelButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => {
+                  setShowDeleteFolderModal(false);
+                  setSelectedFolder(null);
+                }}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.confirmationButton, styles.dangerButton]}
+                onPress={confirmDeleteFolder}
+              >
+                <Icon name="delete-forever" size={18} color="#FFFFFF" />
+                <Text style={styles.dangerButtonText}>Delete Forever</Text>
               </Pressable>
             </View>
           </View>
@@ -506,9 +868,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     gap: 8,
-  },
-  backButton: {
-    padding: 4,
   },
   moreButton: {
     padding: 4,
@@ -705,5 +1064,92 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     letterSpacing: -0.2,
+  },
+  folderItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    marginBottom: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  folderContent: {
+    flex: 1,
+  },
+  folderName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  folderDescription: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  metaText: {
+    fontSize: 12,
+  },
+  metaDot: {
+    fontSize: 12,
+    marginHorizontal: 4,
+  },
+  folderActionButton: {
+    padding: 8,
+    borderRadius: 6,
+  },
+  // Remove old folder styles
+  folderItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  folderIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  folderItemText: {
+    flex: 1,
+  },
+  folderItemTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  folderItemDescription: {
+    fontSize: 14,
+  },
+  folderItemActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

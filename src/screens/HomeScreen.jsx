@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Header from '../components/Header';
 import HomeTabs from '../components/HomeTabs';
@@ -13,7 +13,7 @@ import AutoOrganiseSheet from '../modals/AutoOrganiseSheet';
 import { useAuth } from '../features/auth/authHooks';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
-import { useAutoOrganize, useAutoOrganizing } from '../features/organise';
+import { useAutoOrganize } from '../features/organise';
 import { makeResourceFavorite, moveResourceToTrash, fetchResources as fetchResourcesThunk } from '../features/resources/resourceThunk';
 import { useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -41,12 +41,19 @@ export default function HomeScreen() {
   const { folders, fetchFolders } = useFolders();
   const { colors } = useTheme();
   const autoOrganize = useAutoOrganize();
-  const isAutoOrganizing = useAutoOrganizing();
 
   useEffect(() => {
     fetchResources();
     fetchFolders();
   }, [fetchResources, fetchFolders]);
+  
+  // Additional effect to refresh resources when folders change
+  useEffect(() => {
+    if (folders.length > 0) {
+      // Re-fetch resources to ensure folder relationships are updated
+      fetchResources();
+    }
+  }, [folders.length, fetchResources]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -196,7 +203,7 @@ export default function HomeScreen() {
       map[folder._id] = { name: folder.name, color: folder.color };
     });
     return map;
-  }, [folders]);
+  }, [folders, resources]);
 
   // Filter resources based on active tab
   const filteredResources = useMemo(() => {
@@ -241,6 +248,21 @@ export default function HomeScreen() {
     return filtered;
   }, [activeTab, resources]);
 
+  // Helper function to get folder info from resource
+  const getFolderInfo = useCallback((resource) => {
+    // Try multiple patterns for folder information
+    if (resource.folder && typeof resource.folder === 'object') {
+      return resource.folder; // Already populated folder object
+    }
+    if (resource.folderName) {
+      return resource.folderName; // Direct folder name
+    }
+    if (resource.folderId && folderMap[resource.folderId]) {
+      return folderMap[resource.folderId]; // Look up from folder map
+    }
+    return null;
+  }, [folderMap]);
+  
   const renderItem = useCallback(({ item }) => {
     const isSelected = selectedItems.includes(item._id);
     const isUncategorised = activeTab === 'Uncategorised';
@@ -252,7 +274,7 @@ export default function HomeScreen() {
           url={item.url}
           description={item.description}
           tags={item.tags}
-          folder={item.folderName || (item.folderId ? folderMap[item.folderId] : null)}
+          folder={getFolderInfo(item)}
           isFavorite={item.isFavorite}
           type={item.type}
           onPress={() => handleLinkPress(item)}
@@ -272,7 +294,7 @@ export default function HomeScreen() {
         )}
       </View>
     );
-  }, [handleLinkPress, handleLongPress, handleEdit, handleDelete, handleToggleFavorite, folderMap, selectedItems, activeTab]);
+  }, [handleLinkPress, handleLongPress, handleEdit, handleDelete, handleToggleFavorite, getFolderInfo, selectedItems, activeTab]);
 
   const keyExtractor = useCallback((item) => item._id || item.id || String(item.url), []);
 
