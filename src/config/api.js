@@ -2,7 +2,7 @@ import { API_BASE_URL, API_PREFIX, API_TIMEOUT } from '@env';
 
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: API_BASE_URL || 'https://api-gateway-keeplynk-1.onrender.com',
+  BASE_URL: API_BASE_URL || 'http://10.234.107.124:3000',
   API_PREFIX: API_PREFIX || '/api',
   TIMEOUT: parseInt(API_TIMEOUT, 10) || 10000,
 };
