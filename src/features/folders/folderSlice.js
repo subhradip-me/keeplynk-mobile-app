@@ -8,12 +8,14 @@ import {
     trashFolder,
     restoreFolder,
     hardDeleteFolder,
+    fetchTrashedFolders,
 } from './folderThunk';
 
 const folderSlice = createSlice({
     name: "folders",
     initialState: {
         items: [],
+        trashedItems: [],
         currentFolder: null,
         loading: false,
         error: null,
@@ -114,11 +116,22 @@ const folderSlice = createSlice({
             })
             .addCase(trashFolder.fulfilled, (state, action) => {
                 state.loading = false;
-                const index = state.items.findIndex(f => f._id === action.payload._id);
-                if (index !== -1) {
-                    state.items[index] = action.payload;
+                const trashedFolder = action.payload;
+                
+                // Remove from items (active folders)
+                state.items = state.items.filter(f => f._id !== trashedFolder._id);
+                
+                // Add to trashedItems
+                const trashIndex = state.trashedItems.findIndex(f => f._id === trashedFolder._id);
+                if (trashIndex !== -1) {
+                    // Update if exists
+                    state.trashedItems[trashIndex] = trashedFolder;
+                } else {
+                    // Add if not exists
+                    state.trashedItems.push(trashedFolder);
                 }
-                if (state.currentFolder?._id === action.payload._id) {
+                
+                if (state.currentFolder?._id === trashedFolder._id) {
                     state.currentFolder = null;
                 }
             })
@@ -134,12 +147,29 @@ const folderSlice = createSlice({
             })
             .addCase(restoreFolder.fulfilled, (state, action) => {
                 state.loading = false;
-                const index = state.items.findIndex(f => f._id === action.payload._id);
+                const restoredFolder = action.payload;
+                
+                console.log('Restoring folder:', restoredFolder);
+                
+                // Remove from trashedItems
+                state.trashedItems = state.trashedItems.filter(f => f._id !== restoredFolder._id);
+                
+                // Add to items (active folders)
+                const index = state.items.findIndex(f => f._id === restoredFolder._id);
                 if (index !== -1) {
-                    state.items[index] = action.payload;
+                    // Update if exists
+                    state.items[index] = restoredFolder;
+                    console.log('Updated existing folder in items');
+                } else {
+                    // Add if not exists
+                    state.items.push(restoredFolder);
+                    console.log('Added new folder to items');
                 }
-                if (state.currentFolder?._id === action.payload._id) {
-                    state.currentFolder = action.payload;
+                
+                console.log('Items count:', state.items.length, 'Trashed count:', state.trashedItems.length);
+                
+                if (state.currentFolder?._id === restoredFolder._id) {
+                    state.currentFolder = restoredFolder;
                 }
             })
             .addCase(restoreFolder.rejected, (state, action) => {
@@ -155,11 +185,26 @@ const folderSlice = createSlice({
             .addCase(hardDeleteFolder.fulfilled, (state, action) => {
                 state.loading = false;
                 state.items = state.items.filter(f => f._id !== action.payload);
+                state.trashedItems = state.trashedItems.filter(f => f._id !== action.payload);
                 if (state.currentFolder?._id === action.payload) {
                     state.currentFolder = null;
                 }
             })
             .addCase(hardDeleteFolder.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+
+            // Fetch Trashed Folders
+            .addCase(fetchTrashedFolders.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchTrashedFolders.fulfilled, (state, action) => {
+                state.loading = false;
+                state.trashedItems = action.payload;
+            })
+            .addCase(fetchTrashedFolders.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             });

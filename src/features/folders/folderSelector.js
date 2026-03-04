@@ -4,7 +4,7 @@ const selectFolderState = (state) => state.folders;
 
 export const selectFolders = createSelector(
     [selectFolderState],
-    (folders) => folders.items
+    (folders) => folders?.items || []
 );
 
 export const selectCurrentFolder = createSelector(
@@ -20,4 +20,9 @@ export const selectFoldersLoading = createSelector(
 export const selectFoldersError = createSelector(
     [selectFolderState],
     (folders) => folders.error
+);
+
+export const selectTrashedFolders = createSelector(
+    [selectFolderState],
+    (folders) => folders?.trashedItems || []
 );

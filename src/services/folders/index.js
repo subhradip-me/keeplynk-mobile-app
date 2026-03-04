@@ -13,6 +13,10 @@ export const foldersAPI = {
     const response = await apiService.getFolderById(id);
     return response;
   },
+  getTrashed: async () => {
+    const response = await apiService.getTrashFolders();
+    return response;
+  },
   create: async (data) => {
     const response = await apiService.createFolder(data);
     return response;
@@ -30,11 +34,11 @@ export const foldersAPI = {
     const response = await apiService.restoreFromTrashFolder(id);
     return response;
   },
-
-  delete: async (id) => {
-    const response = await apiService.deleteFolder(id);
+  hardDelete: async (id) => {
+    const response = await apiService.hardDeleteFolder(id);
     return response;
   },
+
   getResources: async (id) => {
     const response = await apiService.getFolderResources(id);
     return response;

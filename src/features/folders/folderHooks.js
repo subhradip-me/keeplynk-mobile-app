@@ -9,6 +9,7 @@ import {
     trashFolder as trashFolderAction,
     restoreFolder as restoreFolderAction,
     hardDeleteFolder as hardDeleteFolderAction,
+    fetchTrashedFolders as fetchTrashedFoldersAction,
 } from './folderThunk';
 import { clearError, setCurrentFolder } from './folderSlice';
 import {
@@ -16,18 +17,21 @@ import {
     selectCurrentFolder,
     selectFoldersLoading,
     selectFoldersError,
+    selectTrashedFolders,
 } from './folderSelector';
 
 // Custom hook for folders
 export const useFolders = () => {
     const dispatch = useDispatch();
     const folders = useSelector(selectFolders);
+    const trashedFolders = useSelector(selectTrashedFolders);
     const currentFolder = useSelector(selectCurrentFolder);
     const loading = useSelector(selectFoldersLoading);
     const error = useSelector(selectFoldersError);
 
     const fetchFolders = useCallback(() => dispatch(fetchFoldersAction()), [dispatch]);
     const fetchFolderById = useCallback((id) => dispatch(fetchFolderByIdAction(id)), [dispatch]);
+    const fetchTrashedFolders = useCallback(() => dispatch(fetchTrashedFoldersAction()), [dispatch]);
     const createFolder = useCallback((folderData) => dispatch(createFolderAction(folderData)), [dispatch]);
     const updateFolder = useCallback((id, folderData) => dispatch(updateFolderAction({ id, folderData })), [dispatch]);
     const deleteFolder = useCallback((id) => dispatch(deleteFolderAction(id)), [dispatch]);
@@ -39,11 +43,13 @@ export const useFolders = () => {
 
     return {
         folders,
+        trashedFolders,
         currentFolder,
         loading,
         error,
         fetchFolders,
         fetchFolderById,
+        fetchTrashedFolders,
         createFolder,
         updateFolder,
         deleteFolder,

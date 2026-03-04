@@ -195,7 +195,7 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
 
   const menuItems = [
     { icon: 'edit', label: 'Edit Folder', action: () => setEditFolderModalVisible(true) },
-    { icon: 'share', label: 'Share', action: () => console.log('Share') },
+    // { icon: 'share', label: 'Share', action: () => console.log('Share') },
     ...(canDeleteFolder ? [{ icon: 'delete', label: 'Delete Folder', action: handleDeleteFolder, danger: true }] : []),
   ];
 
@@ -258,9 +258,9 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
       ) : (
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.linkList}>
-            {folderResources.map((resource) => (
+            {folderResources.map((resource, index) => (
               <LinkItem
-                key={resource._id}
+                key={resource._id || resource.id || `resource-${index}`}
                 title={resource.title}
                 url={resource.url}
                 description={resource.description}
@@ -298,7 +298,7 @@ export default function FolderDetailScreen({ route = { params: { folder: { _id: 
             <View style={[styles.modalContent, { backgroundColor: colors.backgroundTertiary }]}>
               {menuItems.map((item, index) => (
                 <Pressable
-                  key={index}
+                  key={`menu-${item.label}-${index}`}
                   style={({ pressed }) => [
                     styles.menuItem,
                     pressed && { backgroundColor: colors.surfaceHover },

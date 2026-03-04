@@ -18,7 +18,7 @@ export const API_ENDPOINTS = {
     SWITCH_PERSONA: '/auth/personas/switch',
     REMOVE_PERSONA: '/auth/personas',
   },
-  
+
   // Resources
   RESOURCES: {
     BASE: '/resources',
@@ -27,25 +27,30 @@ export const API_ENDPOINTS = {
     UNORGANIZED: '/resources/unorganized',
     BY_ID: (id) => `/resources/${id}`,
   },
-  
+
   // Folders
   FOLDERS: {
     BASE: '/folders',
     BY_ID: (id) => `/folders/${id}`,
     RESOURCES: (id) => `/folders/${id}/resources`,
+
+    TRASH: (id) => `/folders/${id}/trash`,
+    RESTORE: (id) => `/folders/${id}/restore`,
+    HARD_DELETE: (id) => `/folders/${id}/hard`,
+    TRASH_LIST: '/folders/trash/all'
   },
-  
+
   // Tags
   TAGS: {
     BASE: '/tags',
     POPULAR: '/tags/popular',
     BY_ID: (id) => `/tags/${id}`,
   },
-  
+
   // Agent
   AGENT: {
     //ORGANIZE: '/organize',
-   // DECIDE: '/agent/decide',
+    // DECIDE: '/agent/decide',
     AUTO_ORGANIZE: '/organise/auto',
   },
 };

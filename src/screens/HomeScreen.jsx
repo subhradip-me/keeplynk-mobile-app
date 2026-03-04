@@ -203,7 +203,7 @@ export default function HomeScreen() {
       map[folder._id] = { name: folder.name, color: folder.color };
     });
     return map;
-  }, [folders, resources]);
+  }, [folders]);
 
   // Filter resources based on active tab
   const filteredResources = useMemo(() => {

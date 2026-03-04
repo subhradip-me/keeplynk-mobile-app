@@ -403,8 +403,8 @@ export default function SearchScreen() {
                 <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Searching...</Text>
               </View>
             ) : filteredResults.length > 0 ? (
-              filteredResults.map((resource) => {
-                const key = resource._id || resource.id || resource.url;
+              filteredResults.map((resource, index) => {
+                const key = resource._id || resource.id || resource.url || `result-${index}`;
                 return (
                   <LinkItem
                     key={key}
@@ -412,7 +412,7 @@ export default function SearchScreen() {
                     url={resource.url}
                     description={resource.description}
                     tags={resource.tags}
-                    folder={resource.folderName || (resource.folderId ? folderMap[resource.folderId] : null)}
+                    folder={resource.folderName || (resource.folderId ? folderMap[resource.folderId] : null) }
                     isFavorite={resource.isFavorite}
                     type={resource.type}
                     onPress={() => handlePreview(resource)}
@@ -518,11 +518,11 @@ export default function SearchScreen() {
               // Default view - Recent Resources, Tags, and Folders
               <>
                 {/* Recent Resources */}
-                {resources.length > 0 && (
+                {resources.filter(r => !r.isTrashed).length > 0 && (
                   <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Recent Resources</Text>
-                    {resources.slice(0, 10).map((resource) => {
-                      const key = resource._id || resource.id || resource.url;
+                    {resources.filter(r => !r.isTrashed).slice(0, 10).map((resource, index) => {
+                      const key = resource._id || resource.id || resource.url || `recent-${index}`;
                       return (
                         <LinkItem
                           key={key}

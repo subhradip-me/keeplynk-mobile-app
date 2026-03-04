@@ -127,18 +127,31 @@ class ApiService {
     return response.data;
   }
 
+
+  // Soft delete (move to trash)
+
   async moveToTrashFolder(id) {
-    const response = await apiClient.patch(`${API_ENDPOINTS.FOLDERS.BY_ID(id)}/trash`);
+    const response = await apiClient.patch(API_ENDPOINTS.FOLDERS.TRASH(id));
     return response.data;
   }
-
+  
   async restoreFromTrashFolder(id) {
-    const response = await apiClient.patch(`${API_ENDPOINTS.FOLDERS.BY_ID(id)}/restore`);
+    const response = await apiClient.patch(API_ENDPOINTS.FOLDERS.RESTORE(id));
     return response.data;
   }
 
-  async deleteFolder(id) {
-    const response = await apiClient.delete(API_ENDPOINTS.FOLDERS.BY_ID(id));
+
+  // Hard delete (permanent deletion)
+  
+  async hardDeleteFolder(id) {
+    const response = await apiClient.delete(API_ENDPOINTS.FOLDERS.HARD_DELETE(id));
+    return response.data;
+  }
+
+  async getTrashFolders() {
+    const response = await apiClient.get(
+      `${API_ENDPOINTS.FOLDERS.BASE}/trash/all`
+    );
     return response.data;
   }
 

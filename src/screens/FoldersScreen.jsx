@@ -12,7 +12,9 @@ export default function FoldersScreen() {
   const navigation = useNavigation();
   const { folders, fetchFolders, createFolder } = useFolders();
   const [modalVisible, setModalVisible] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [newFolderModalVisible, setNewFolderModalVisible] = useState(false);
+  const [selectedSort, setSelectedSort] = useState('name_asc');
 
   useEffect(() => {
     fetchFolders();
@@ -27,9 +29,20 @@ export default function FoldersScreen() {
 
   const menuItems = [
     { icon: 'add', label: 'New Folder', action: () => setNewFolderModalVisible(true) },
-    { icon: 'search', label: 'Sort By', action: () => console.log('Sort By') },
-    { icon: 'more-vert', label: 'Settings', action: () => console.log('Settings') },
+    { icon: 'delete-outline', label: 'Trash', action: () => navigation.navigate('Trash') },
+    { icon: 'settings', label: 'Settings', action: () => navigation.navigate('Profile') },
   ];
+
+  const sortByOptions = [
+    { label: 'Name (A-Z)', value: 'name_asc' },
+    { label: 'Name (Z-A)', value: 'name_desc' },
+    { label: 'Date Created (Newest)', value: 'created_desc' },
+    { label: 'Date Created (Oldest)', value: 'created_asc' },
+  ];
+
+  const handleFilterPress = useCallback(() => {
+    setFilterModalVisible(true);
+  }, []);
 
   const handleMorePress = useCallback(() => {
     setModalVisible(true);
@@ -38,6 +51,15 @@ export default function FoldersScreen() {
   const closeModal = useCallback(() => {
     setModalVisible(false);
   }, []);
+
+  const closeFilterModal = useCallback(() => {
+    setFilterModalVisible(false);
+  }, []);
+
+  const handleSortSelect = useCallback((sortValue) => {
+    setSelectedSort(sortValue);
+    closeFilterModal();
+  }, [closeFilterModal]);
 
   const handleSaveFolder = useCallback(async (folder) => {
     try {
@@ -72,6 +94,25 @@ export default function FoldersScreen() {
     if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
+
+  // Sort folders based on selected option
+  const sortedFolders = React.useMemo(() => {
+    const filtered = folders?.filter(f => f && f._id && !f.isTrashed) || [];
+    const sorted = [...filtered];
+    
+    switch (selectedSort) {
+      case 'name_asc':
+        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+      case 'name_desc':
+        return sorted.sort((a, b) => b.name.localeCompare(a.name));
+      case 'created_desc':
+        return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      case 'created_asc':
+        return sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      default:
+        return sorted;
+    }
+  }, [folders, selectedSort]);
 
   const renderFolderItem = ({ item }) => (
     <Pressable 
@@ -115,6 +156,12 @@ export default function FoldersScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.border }]}>
         <Text style={[styles.headerText, { color: colors.textPrimary }]}>Folders</Text>
+
+        <Pressable 
+          onPress={handleFilterPress}
+          style={styles.filterButton}>
+          <Icon name="filter-list" size={20} color={colors.textPrimary} />
+        </Pressable>
         <Pressable 
           onPress={handleMorePress}
           style={styles.moreButton}>
@@ -124,14 +171,14 @@ export default function FoldersScreen() {
 
       {/* Folder List */}
       <FlatList
-        data={folders?.filter(f => !f.isTrashed) || []}
-        keyExtractor={(item) => item._id}
+        data={sortedFolders}
+        keyExtractor={(item, index) => item?._id || `folder-${index}`}
         renderItem={renderFolderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Modal */}
+      {/* Menu Modal */}
       <Modal
         visible={modalVisible}
         transparent={true}
@@ -160,6 +207,44 @@ export default function FoldersScreen() {
                 >
                   <Icon name={item.icon} size={20} color={colors.textPrimary} />
                   <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>{item.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Filter/Sort Modal */}
+      <Modal
+        visible={filterModalVisible}
+        transparent={true}
+        animationType="none"
+        onRequestClose={closeFilterModal}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={closeFilterModal}
+        >
+          <View style={styles.filterModalContainer}>
+            <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.modalHeaderText, { color: colors.textPrimary }]}>Sort by</Text>
+              </View>
+              {sortByOptions.map((option, index) => (
+                <Pressable
+                  key={index}
+                  style={({ pressed }) => [
+                    styles.menuItem,
+                    pressed && { backgroundColor: colors.surfaceHover },
+                    index === sortByOptions.length - 1 && styles.menuItemLast
+                  ]}
+                  onPress={() => handleSortSelect(option.value)}
+                >
+                  <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>{option.label}</Text>
+                  {selectedSort === option.value && (
+                    <Icon name="check" size={20} color={colors.primary} style={styles.checkIcon} />
+                  )}
                 </Pressable>
               ))}
             </View>
@@ -196,6 +281,12 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: -0.4,
+  },
+  filterButton: {
+    position: 'absolute',
+    right: 62,
+    padding: 4,
+    borderRadius: 4,
   },
   moreButton: {
     padding: 4,
@@ -265,15 +356,36 @@ const styles = StyleSheet.create({
     top: 48,
     right: 16,
   },
+  filterModalContainer: {
+    position: 'absolute',
+    top: 48,
+    right: 16,
+  },
+  modalHeader: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  modalHeaderText: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+    textTransform: 'uppercase',
+  },
+  checkIcon: {
+    marginLeft: 'auto',
+  },
   modalContent: {
     borderRadius: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     minWidth: 180,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 8,
+    flexDirection: 'column',
+    gap: 0.2,
   },
   menuItem: {
     flexDirection: 'row',

@@ -86,7 +86,9 @@ export const restoreFolder = createAsyncThunk(
     async (id, { rejectWithValue }) => {
         try {
             const data = await foldersAPI.restoreFromTrash(id);
-            return data.data || data;
+            const folder = data.data || data;
+            console.log('Restore folder API response:', folder);
+            return folder;
         } catch (error) {
             return rejectWithValue(error.message);
         }
@@ -98,8 +100,24 @@ export const hardDeleteFolder = createAsyncThunk(
     'folders/hardDeleteFolder',
     async (id, { rejectWithValue }) => {
         try {
-            await foldersAPI.delete(id);
+            await foldersAPI.hardDelete(id);
             return id;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+// Fetch trashed folders
+export const fetchTrashedFolders = createAsyncThunk(
+    'folders/fetchTrashedFolders',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await foldersAPI.getTrashed();
+            // API returns { success, data: { folders: [...], resources: [] } }
+            // Extract the folders array from the nested structure
+            const data = response.data || response;
+            return data.folders || data || [];
         } catch (error) {
             return rejectWithValue(error.message);
         }

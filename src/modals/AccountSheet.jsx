@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, Modal, TouchableOpacity, Animated, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useAuth } from '../features/auth/authHooks';
 import { useTheme } from '../features/theme';
 
 // Simple icon component
@@ -10,6 +11,37 @@ export default function AccountSheet({ visible, onClose, onLogout, user, onAccou
   const { colors } = useTheme();
   const navigation = useNavigation();
   const slideAnim = React.useRef(new Animated.Value(200)).current;
+
+  const { user: authUser, logout, isAuthenticated } = useAuth();
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+              // Navigate to Auth screen after logout
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Auth' }],
+              });
+            } catch (error) {
+              console.error('Logout error:', error);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   React.useEffect(() => {
     if (visible) {
@@ -31,19 +63,19 @@ export default function AccountSheet({ visible, onClose, onLogout, user, onAccou
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableOpacity 
-        style={styles.overlay} 
-        activeOpacity={1} 
+      <TouchableOpacity
+        style={styles.overlay}
+        activeOpacity={1}
         onPress={onClose}
       >
-        <Animated.View 
+        <Animated.View
           style={[
             styles.sheet,
             { backgroundColor: colors.backgroundTertiary, transform: [{ translateY: slideAnim }] }
           ]}
         >
           <View style={[styles.handle, { backgroundColor: colors.textPrimary }]} />
-          
+
           <View style={styles.container}>
             {/* Account Info */}
             <View style={[styles.account, { backgroundColor: colors.backgroundTertiary, borderColor: colors.border }]}>
@@ -55,8 +87,8 @@ export default function AccountSheet({ visible, onClose, onLogout, user, onAccou
 
               <View>
                 <Text style={[styles.name, { color: colors.textPrimary }]}>
-                  {user?.firstName && user?.lastName 
-                    ? `${user.firstName} ${user.lastName}`.toUpperCase() 
+                  {user?.firstName && user?.lastName
+                    ? `${user.firstName} ${user.lastName}`.toUpperCase()
                     : 'User'}
                 </Text>
                 <Text style={[styles.email, { color: colors.textSecondary }]}>{user?.email || 'No email'}</Text>
@@ -82,29 +114,11 @@ export default function AccountSheet({ visible, onClose, onLogout, user, onAccou
               label="Log out"
               danger
               onPress={() => {
-                Alert.alert(
-                  'Log Out',
-                  'Are you sure you want to log out?',
-                  [
-                    {
-                      text: 'Cancel',
-                      style: 'cancel',
-                    },
-                    {
-                      text: 'Log Out',
-                      style: 'destructive',
-                      onPress: () => {
-                        onClose();
-                        // Use setTimeout to ensure modal closes before navigation
-                        setTimeout(() => {
-                          if (onLogout) {
-                            onLogout();
-                          }
-                        }, 300);
-                      },
-                    },
-                  ],
-                );
+                onClose();
+                // Use setTimeout to ensure modal closes before showing alert
+                setTimeout(() => {
+                  handleLogout();
+                }, 300);
               }}
             />
           </View>

@@ -44,10 +44,12 @@ export default function MoveToFolderSheet({
     }
   }, [visible, slideAnim]);
 
-  const filteredFolders = folders.filter(folder => 
+  const filteredFolders = folders?.filter(folder => 
+    folder &&
     !folder.isTrashed && 
+    folder.name &&
     folder.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) || [];
 
   const handleMoveToFolder = async (folderId) => {
     setIsMoving(true);

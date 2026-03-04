@@ -1,15 +1,12 @@
-import React, { useMemo, useCallback, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, Alert, Modal, TouchableOpacity } from 'react-native';
+import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, Pressable, Alert, Modal, TouchableOpacity, RefreshControl, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../features/theme';
 import LinkItem from '../components/LinkItem';
 import { useResources } from '../features/resources/resourceHooks';
 import { useFolders } from '../features/folders/folderHooks';
-import { restoreResourceFromTrash, deleteResource, fetchResources } from '../features/resources/resourceThunk';
-import { fetchFolders } from '../features/folders/folderThunk';
 
 // Simple EmptyState component for trash
 const EmptyState = ({ icon, title, message, colors }) => (
@@ -22,10 +19,9 @@ const EmptyState = ({ icon, title, message, colors }) => (
 
 export default function TrashScreen() {
   const { colors } = useTheme();
-  const dispatch = useDispatch();
   const navigation = useNavigation();
-  const { resources = [] } = useResources();
-  const { folders, restoreFromTrash, permanentDelete } = useFolders();
+  const { resources = [], fetchResources, deleteResource: deleteResourceAction, restoreFromTrash: restoreResourceFromTrash } = useResources();
+  const { folders, trashedFolders, fetchFolders, restoreFromTrash, permanentDelete, fetchTrashedFolders } = useFolders();
   const [showActionsModal, setShowActionsModal] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -36,16 +32,29 @@ export default function TrashScreen() {
   const [showDeleteFolderModal, setShowDeleteFolderModal] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
   const [selectedFolder, setSelectedFolder] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 100, right: 16 });
+  const folderActionButtonRef = useRef(null);
+  const windowHeight = Dimensions.get('window').height;
+  
+  // Initial data fetch on mount
+  useEffect(() => {
+    fetchResources();
+    fetchTrashedFolders();
+    fetchFolders(); // Fetch regular folders too for proper state sync
+  }, [fetchResources, fetchTrashedFolders, fetchFolders]);
   
   // Real-time updates - refresh data when screen is focused
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       // Refresh data when screen comes into focus
       // This ensures real-time updates when items are moved to/from trash
+      fetchResources();
+      fetchTrashedFolders();
     });
     
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation, fetchResources, fetchTrashedFolders]);
   
   // Create a folder lookup map
   const folderMap = useMemo(() => {
@@ -56,32 +65,29 @@ export default function TrashScreen() {
     return map;
   }, [folders]);
   
-  // Filter deleted resources and folders with error handling
+  // Filter deleted resources with error handling
   const trashedResources = useMemo(() => {
     try {
-      return resources?.filter(r => r?.isTrashed === true) || [];
+      return resources?.filter(r => r?.isTrashed === true ) || [];
     } catch (error) {
       console.error('Error filtering trashed resources:', error);
       return [];
     }
   }, [resources]);
 
-  const trashedFolders = useMemo(() => {
-    try {
-      return folders?.filter(f => f?.isTrashed === true) || [];
-    } catch (error) {
-      console.error('Error filtering trashed folders:', error);
-      return [];
-    }
-  }, [folders]);
+  // Debug: Log when trashedFolders changes
+  useEffect(() => {
+    console.log('TrashScreen - trashedFolders updated:', trashedFolders?.length || 0, 'folders');
+  }, [trashedFolders]);
 
   const totalTrashedItems = (trashedResources?.length || 0) + (trashedFolders?.length || 0);
 
   // Combine trashed resources and folders for display with error handling
   const trashedItems = useMemo(() => {
     try {
+      const safeFolders = trashedFolders || [];
       const combined = [
-        ...(trashedFolders?.map(folder => ({ ...folder, itemType: 'folder' })) || []),
+        ...safeFolders.map(folder => ({ ...folder, itemType: 'folder' })),
         ...(trashedResources?.map(resource => ({ ...resource, itemType: 'resource' })) || [])
       ];
       return combined.sort((a, b) => {
@@ -115,16 +121,16 @@ export default function TrashScreen() {
     
     setShowRestoreFolderModal(false);
     try {
-      await restoreFromTrash(selectedFolder._id);
-      // Refresh folders to sync backend state
-      await dispatch(fetchFolders());
-      // Real-time update - remove from trash list
+      // Await and unwrap to ensure Redux state is fully updated
+      const result = await restoreFromTrash(selectedFolder._id);
+      console.log('Folder restored successfully:', result);
       setSelectedFolder(null);
     } catch (error) {
       Alert.alert('Error', 'Failed to restore folder');
       console.error('Failed to restore folder:', error);
+      setSelectedFolder(null);
     }
-  }, [restoreFromTrash, selectedFolder, dispatch]);
+  }, [restoreFromTrash, selectedFolder]);
 
   const handlePermanentDeleteFolder = useCallback(async (folder) => {
     // Prevent permanent deletion of Uncategorised folder
@@ -142,16 +148,15 @@ export default function TrashScreen() {
     
     setShowDeleteFolderModal(false);
     try {
-      await permanentDelete(selectedFolder._id);
-      // Refresh folders to sync backend state
-      await dispatch(fetchFolders());
-      // Real-time update - remove from trash list
+      const result = await permanentDelete(selectedFolder._id);
+      console.log('Folder permanently deleted:', result);
       setSelectedFolder(null);
     } catch (error) {
       Alert.alert('Error', 'Failed to permanently delete folder');
       console.error('Failed to permanently delete folder:', error);
+      setSelectedFolder(null);
     }
-  }, [permanentDelete, selectedFolder, dispatch]);
+  }, [permanentDelete, selectedFolder]);
 
   const handleFolderActions = useCallback((folder) => {
     setSelectedFolder(folder);
@@ -163,14 +168,14 @@ export default function TrashScreen() {
     
     setShowRestoreModal(false);
     try {
-      await dispatch(restoreResourceFromTrash(selectedResource._id)).unwrap();
-      dispatch(fetchResources());
+      await restoreResourceFromTrash(selectedResource._id);
+      fetchResources();
     } catch (error) {
       Alert.alert('Error', 'Failed to restore resource');
       console.error('Failed to restore resource:', error);
     }
     setSelectedResource(null);
-  }, [dispatch, selectedResource]);
+  }, [restoreResourceFromTrash, selectedResource, fetchResources]);
 
   const handlePermanentDelete = useCallback(async (resource) => {
     setSelectedResource(resource);
@@ -182,13 +187,13 @@ export default function TrashScreen() {
     
     setShowDeleteModal(false);
     try {
-      await dispatch(deleteResource(selectedResource._id)).unwrap();
+      await deleteResourceAction(selectedResource._id);
     } catch (error) {
       Alert.alert('Error', 'Failed to delete resource');
       console.error('Failed to delete resource:', error);
     }
     setSelectedResource(null);
-  }, [dispatch, selectedResource]);
+  }, [deleteResourceAction, selectedResource]);
 
   const handleEmptyTrash = useCallback(async () => {
     if (totalTrashedItems === 0) return;
@@ -199,17 +204,20 @@ export default function TrashScreen() {
     setShowEmptyTrashModal(false);
     try {
       const resourcePromises = trashedResources.map(resource => 
-        dispatch(deleteResource(resource._id)).unwrap()
+        deleteResourceAction(resource._id)
       );
-      const folderPromises = trashedFolders.map(folder => 
+      const folderPromises = (trashedFolders || []).map(folder => 
         permanentDelete(folder._id)
       );
       await Promise.all([...resourcePromises, ...folderPromises]);
+      // Refresh data after deletion
+      fetchResources();
+      fetchTrashedFolders();
     } catch (error) {
       Alert.alert('Error', 'Failed to empty trash');
       console.error('Failed to empty trash:', error);
     }
-  }, [trashedResources, trashedFolders, dispatch, permanentDelete]);
+  }, [trashedResources, trashedFolders, deleteResourceAction, permanentDelete, fetchResources, fetchTrashedFolders]);
 
   const handleRestoreAll = useCallback(async () => {
     if (totalTrashedItems === 0) return;
@@ -220,18 +228,20 @@ export default function TrashScreen() {
     setShowRestoreAllModal(false);
     try {
       const resourcePromises = trashedResources.map(resource => 
-        dispatch(restoreResourceFromTrash(resource._id)).unwrap()
+        restoreResourceFromTrash(resource._id)
       );
-      const folderPromises = trashedFolders.map(folder => 
+      const folderPromises = (trashedFolders || []).map(folder => 
         restoreFromTrash(folder._id)
       );
       await Promise.all([...resourcePromises, ...folderPromises]);
-      dispatch(fetchResources());
+      // Refresh data after restoration
+      fetchResources();
+      fetchTrashedFolders();
     } catch (error) {
       Alert.alert('Error', 'Failed to restore all items');
       console.error('Failed to restore all items:', error);
     }
-  }, [trashedResources, trashedFolders, dispatch, restoreFromTrash]);
+  }, [trashedResources, trashedFolders, restoreResourceFromTrash, restoreFromTrash, fetchResources, fetchTrashedFolders]);
 
   const renderTrashItem = useCallback(({ item }) => {
     if (item.itemType === 'folder') {
@@ -266,10 +276,33 @@ export default function TrashScreen() {
           </View>
 
           <Pressable
-            onPress={() => handleFolderActions(item)}
+            ref={folderActionButtonRef}
+            onPress={(e) => {
+              e?.stopPropagation?.();
+              folderActionButtonRef.current?.measureInWindow((x, y, width, height) => {
+                const menuHeight = 140; // Approximate menu height
+                const buttonPosition = y + height;
+                const screenPosition = buttonPosition / windowHeight;
+                
+                // If button is in lower 75% of screen, position menu above
+                if (screenPosition > 0.75) {
+                  setMenuPosition({ 
+                    top: y - menuHeight - 8,
+                    right: 16 
+                  });
+                } else {
+                  setMenuPosition({ 
+                    top: y + height + 8,
+                    right: 16 
+                  });
+                }
+                handleFolderActions(item);
+              });
+            }}
             style={styles.folderActionButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Icon name="more-vert" size={20} color={colors.textTertiary} />
+            <Icon name="more-vert" size={20} color={colors.textSecondary} />
           </Pressable>
         </Pressable>
       );
@@ -294,7 +327,7 @@ export default function TrashScreen() {
         showOnlyTrashActions={true} // Flag to show only restore and delete actions
       />
     );
-  }, [handleRestore, handlePermanentDelete, handleFolderActions, folderMap, colors]);
+  }, [handleRestore, handlePermanentDelete, handleFolderActions, folderMap, colors, windowHeight]);
 
   const keyExtractor = useCallback((item, index) => {
     try {
@@ -309,6 +342,21 @@ export default function TrashScreen() {
       return `error-${index}-${Date.now()}`;
     }
   }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        fetchResources(),
+        fetchTrashedFolders(),
+        fetchFolders()
+      ]);
+    } catch (error) {
+      console.error('Error refreshing:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchResources, fetchTrashedFolders, fetchFolders]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
@@ -331,7 +379,7 @@ export default function TrashScreen() {
             onPress={() => setShowActionsModal(true)}
             style={styles.moreButton}
           >
-            <Icon name="more-vert" size={24} color={colors.textPrimary} />
+            <Icon name="more-vert" size={24} color={colors.textSecondary} />
           </Pressable>
         )}
       </View>
@@ -351,6 +399,14 @@ export default function TrashScreen() {
           keyExtractor={keyExtractor}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
         />
       )}
 
@@ -655,31 +711,34 @@ export default function TrashScreen() {
         onRequestClose={() => setShowFolderActionsModal(false)}
       >
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={styles.modalOverlayTransparent}
           activeOpacity={1}
           onPress={() => setShowFolderActionsModal(false)}
         >
-          <View style={styles.dropdownContainer}>
-            <View style={[styles.dropdownContent, { backgroundColor: colors.backgroundTertiary, shadowColor: colors.shadow }]}>
+          <View style={[styles.menuContainer, { top: menuPosition.top, right: menuPosition.right }]}>
+            <View style={[styles.menuContent, { backgroundColor: colors.backgroundTertiary, borderColor: colors.border }]}>
               <Pressable
                 style={({ pressed }) => [
-                  styles.dropdownOption,
-                  pressed && { backgroundColor: colors.surfaceHover }
+                  styles.menuItem,
+                  pressed && { backgroundColor: colors.hover },
+                  styles.menuItemFirst,
                 ]}
                 onPress={() => {
                   setShowFolderActionsModal(false);
                   handleRestoreFolder(selectedFolder);
                 }}
               >
-                <Icon name="restore" size={20} color={colors.primary} />
-                <Text style={[styles.dropdownOptionText, { color: colors.textPrimary }]}>Restore Folder</Text>
+                <Icon name="restore" size={18} color={colors.textSecondary} />
+                <Text style={[styles.menuItemText, { color: colors.textSecondary }]}>
+                  Restore Folder
+                </Text>
               </Pressable>
 
               <Pressable
                 style={({ pressed }) => [
-                  styles.dropdownOption,
-                  styles.dropdownOptionLast,
-                  pressed && { backgroundColor: colors.surfaceHover }
+                  styles.menuItem,
+                  pressed && { backgroundColor: colors.hover },
+                  styles.menuItemLast,
                 ]}
                 onPress={() => {
                   setShowFolderActionsModal(false);
@@ -689,20 +748,17 @@ export default function TrashScreen() {
               >
                 <Icon 
                   name="delete-forever" 
-                  size={20} 
+                  size={18} 
                   color={
                     selectedFolder?.name === 'Uncategorised' || selectedFolder?.name === 'Uncategorized' 
                       ? colors.textDisabled 
-                      : colors.error
+                      : '#EF4444'
                   } 
                 />
                 <Text style={[
-                  styles.dropdownOptionText, 
-                  { color: 
-                    selectedFolder?.name === 'Uncategorised' || selectedFolder?.name === 'Uncategorized' 
-                      ? colors.textDisabled 
-                      : colors.error
-                  }
+                  styles.menuItemText,
+                  { color: colors.textSecondary },
+                  !(selectedFolder?.name === 'Uncategorised' || selectedFolder?.name === 'Uncategorized') && styles.menuItemTextDanger
                 ]}>
                   Delete Forever
                 </Text>
@@ -939,6 +995,46 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
+  modalOverlayTransparent: {
+    flex: 1,
+  },
+  menuContainer: {
+    position: 'absolute',
+  },
+  menuContent: {
+    borderRadius: 8,
+    minWidth: 192,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 12,
+    overflow: 'hidden',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  menuItemFirst: {
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  menuItemLast: {
+    borderBottomWidth: 0,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  menuItemText: {
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  menuItemTextDanger: {
+    color: '#EF4444',
+  },
   dropdownContainer: {
     position: 'absolute',
     top: 56,
@@ -1068,7 +1164,7 @@ const styles = StyleSheet.create({
   folderItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 16,
     marginBottom: 8,
     borderRadius: 12,
     borderWidth: 1,
@@ -1105,51 +1201,53 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   folderActionButton: {
-    padding: 8,
-    borderRadius: 6,
+    position: 'absolute',
+     top: 12,
+     right: 8,
+     padding: 4,
   },
-  // Remove old folder styles
-  folderItemContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  folderIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  folderItemText: {
-    flex: 1,
-  },
-  folderItemTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  folderItemDescription: {
-    fontSize: 14,
-  },
-  folderItemActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    flex: 1,
-    justifyContent: 'center',
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
+  // // Remove old folder styles
+  // folderItemContent: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   marginBottom: 12,
+  // },
+  // folderIcon: {
+  //   width: 44,
+  //   height: 44,
+  //   borderRadius: 8,
+  //   alignItems: 'center',
+  //   justifyContent: 'center',
+  //   marginRight: 12,
+  // },
+  // folderItemText: {
+  //   flex: 1,
+  // },
+  // folderItemTitle: {
+  //   fontSize: 16,
+  //   fontWeight: '600',
+  //   marginBottom: 4,
+  // },
+  // folderItemDescription: {
+  //   fontSize: 14,
+  // },
+  // folderItemActions: {
+  //   flexDirection: 'row',
+  //   gap: 8,
+  // },
+  // actionButton: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   gap: 6,
+  //   paddingVertical: 8,
+  //   paddingHorizontal: 12,
+  //   borderRadius: 8,
+  //   flex: 1,
+  //   justifyContent: 'center',
+  // },
+  // actionButtonText: {
+  //   fontSize: 14,
+  //   fontWeight: '600',
+  //   color: '#ff0000ff',
+  // },
 });
